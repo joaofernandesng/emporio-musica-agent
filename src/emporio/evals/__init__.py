@@ -26,7 +26,7 @@ REPORTS_DIR = RUNTIME_DIR / "evals"
 def normalize(text: str) -> str:
     """Lowercase, no accents, collapsed whitespace: makes text checks tolerant."""
     plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    return re.sub(r"\s+", " ", plain.lower())
+    return re.sub(r"\s+", " ", plain.lower()).strip()
 
 
 @dataclass
