@@ -100,3 +100,13 @@ def test_call_tool_errors_do_not_raise():
     assert "unknown tool" in json.loads(call_tool("rm_rf", {}))["error"]
     assert "invalid JSON" in json.loads(call_tool("get_product", "{bad"))["error"]
     assert "bad arguments" in json.loads(call_tool("get_product", {"bogus": 1}))["error"]
+
+
+def test_contact_query_carries_the_official_number_note():
+    out = search_policies("qual o telefone e whatsapp da loja?")
+    assert any("3341-4444" in n for n in out["notes"])
+
+
+def test_defect_query_carries_the_ticket_note():
+    out = search_policies("meu violão veio com defeito, tem garantia?")
+    assert any("create_ticket" in n for n in out.get("notes", []))

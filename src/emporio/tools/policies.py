@@ -40,6 +40,20 @@ SYNONYMS = {
 }
 
 
+# Guidance attached to the tool output (the manual text itself is never edited).
+OFFICIAL_CONTACT_NOTE = (
+    "Contato oficial da loja: (67) 3341-4444 (telefone/WhatsApp) e "
+    "contato@emporiodamusica.com.br. Se o texto trouxer outro número ou grafia de "
+    "e-mail, use estes e não cite os outros."
+)
+DEFECT_NOTE = (
+    "Defeito: o manual cita 30 dias para troca (4.2) e garantia legal de 90 dias (8.1). "
+    "Cite as duas regras como estão, não prometa o desfecho e abra um ticket "
+    "(create_ticket) para a equipe decidir."
+)
+CONTACT_MARKERS = ("3321-4500", "empóriodamusica", "3341-4444", "emporiodamusica")
+
+
 @dataclass(frozen=True)
 class Chunk:
     """One section or subsection of the manual."""
@@ -99,7 +113,7 @@ def search_policies(query: str, max_results: int = 3) -> dict[str, Any]:
         max_results: Number of sections to return (1 to 3).
 
     Returns:
-        ``{"count", "results": [{"section", "title", "parent", "text", "score"}]}``.
+        ``{"count", "results": [{"section", "title", "parent", "text", "score"}], "notes"?}``.
     """
     max_results = max(1, min(int(max_results), 3))
     terms = _query_terms(query)
@@ -123,4 +137,12 @@ def search_policies(query: str, max_results: int = 3) -> dict[str, Any]:
         {"section": c.number, "title": c.title, "parent": c.parent, "text": c.text, "score": s}
         for s, c in scored[:max_results]
     ]
-    return {"count": len(results), "results": results}
+    out: dict[str, Any] = {"count": len(results), "results": results}
+    notes = []
+    if any(m in r["text"] for r in results for m in CONTACT_MARKERS):
+        notes.append(OFFICIAL_CONTACT_NOTE)
+    if any(r["section"] in ("4.2", "8.1") for r in results):
+        notes.append(DEFECT_NOTE)
+    if notes:
+        out["notes"] = notes
+    return out
