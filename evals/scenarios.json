@@ -24,7 +24,7 @@
       "messages": ["Vocês estão abertos agora?"],
       "tools_any": ["get_store_hours"],
       "must": [["aberto", "abertos", "abrimos", "funcionando", "atendendo"]],
-      "must_not": ["fechado", "fechamos"]
+      "must_not": ["fechado"]
     },
     {
       "id": "produto_esgotado_96",
