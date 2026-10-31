@@ -52,3 +52,8 @@ def test_list_item_limit():
     four = "- a\n- b\n- c\n- d"
     assert check({"max_list_items": 4}, [], [five])
     assert check({"max_list_items": 4}, [], [four]) == []
+
+
+def test_min_list_items():
+    assert check({"min_list_items": 2}, [], ["Só oferece ver alternativas?"])
+    assert check({"min_list_items": 2}, [], ["- a\n- b"]) == []

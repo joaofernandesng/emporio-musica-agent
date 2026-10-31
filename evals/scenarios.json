@@ -68,7 +68,8 @@
           "abertos",
           "abrimos",
           "funcionando",
-          "atendendo"
+          "atendendo",
+          "estamos"
         ]
       ],
       "must_not": [
@@ -94,7 +95,8 @@
           "sem estoque",
           "acabou"
         ]
-      ]
+      ],
+      "min_list_items": 2
     },
     {
       "id": "produto_descontinuado_113",
@@ -112,7 +114,8 @@
           "fora de linha",
           "saiu de linha"
         ]
-      ]
+      ],
+      "min_list_items": 2
     },
     {
       "id": "promocao_ativa_90",
@@ -239,7 +242,8 @@
           "so trabalh",
           "apenas",
           "exclusivamente",
-          "somente"
+          "somente",
+          "nao consigo"
         ]
       ]
     },

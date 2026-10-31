@@ -71,6 +71,9 @@ def check(scenario: dict[str, Any], tools: list[str], replies: list[str]) -> lis
     for pattern in GLOBAL_FORBIDDEN:
         if re.search(pattern, text):
             failures.append(f"reply must not mention the internal manual/section ({pattern})")
+    minimum = scenario.get("min_list_items")
+    if minimum is not None and count_list_items(replies) < minimum:
+        failures.append(f"list has {count_list_items(replies)} items, expected at least {minimum}")
     limit = scenario.get("max_list_items")
     if limit is not None and count_list_items(replies) > limit:
         failures.append(f"list has {count_list_items(replies)} items, limit is {limit}")
