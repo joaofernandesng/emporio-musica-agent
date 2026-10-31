@@ -37,6 +37,17 @@ class ScenarioResult:
     tools: list[str]
     replies: list[str]
     usage: Usage = field(default_factory=Usage)
+    calls: list[dict[str, Any]] = field(default_factory=list)
+
+
+# The policies manual is internal: replies to customers must never mention it.
+GLOBAL_FORBIDDEN = (r"\bmanual\b", r"\bsecao\b", r"\bsecoes\b")
+LIST_ITEM = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+\S", re.MULTILINE)
+
+
+def count_list_items(replies: list[str]) -> int:
+    """Largest number of list items (bullets or numbered lines) in a single reply."""
+    return max((len(LIST_ITEM.findall(r)) for r in replies), default=0)
 
 
 def check(scenario: dict[str, Any], tools: list[str], replies: list[str]) -> list[str]:
@@ -57,6 +68,12 @@ def check(scenario: dict[str, Any], tools: list[str], replies: list[str]) -> lis
     for forbidden in scenario.get("must_not", []):
         if normalize(forbidden) in text:
             failures.append(f"reply must not contain {forbidden!r}")
+    for pattern in GLOBAL_FORBIDDEN:
+        if re.search(pattern, text):
+            failures.append(f"reply must not mention the internal manual/section ({pattern})")
+    limit = scenario.get("max_list_items")
+    if limit is not None and count_list_items(replies) > limit:
+        failures.append(f"list has {count_list_items(replies)} items, limit is {limit}")
     return failures
 
 
@@ -74,15 +91,28 @@ def run_scenario(client: LLMClient, scenario: dict[str, Any], now: str, tickets_
 
     agent = Agent(client, dispatch=dispatch)
     tools: list[str] = []
+    calls: list[dict[str, Any]] = []
     replies: list[str] = []
     usage = Usage()
     for message in scenario["messages"]:
         turn = agent.respond(message)
         tools += [e.name for e in turn.tool_events]
+        calls += [_describe(e) for e in turn.tool_events]
         replies.append(turn.text)
         usage.add(turn.usage)
     failures = check(scenario, tools, replies)
-    return ScenarioResult(scenario["id"], not failures, failures, tools, replies, usage)
+    return ScenarioResult(scenario["id"], not failures, failures, tools, replies, usage, calls)
+
+
+def _describe(event) -> dict[str, Any]:
+    """Tool call with its arguments and, for policy searches, the sections returned."""
+    call: dict[str, Any] = {"name": event.name, "arguments": event.arguments}
+    if event.name == "search_policies":
+        try:
+            call["sections"] = [r["section"] for r in json.loads(event.result).get("results", [])]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
+    return call
 
 
 def estimate_cost(usage: Usage) -> float | None:
@@ -132,7 +162,7 @@ def write_report(results: list[ScenarioResult], now: str, reports_dir: Path, sta
         "tokens": {"prompt": total.prompt_tokens, "completion": total.completion_tokens, "total": total.total_tokens},
         "estimated_cost_usd": cost,
         "scenarios": [
-            {"id": r.id, "passed": r.passed, "failures": r.failures, "tools": r.tools,
+            {"id": r.id, "passed": r.passed, "failures": r.failures, "tools": r.tools, "calls": r.calls,
              "tokens": r.usage.total_tokens, "replies": r.replies}
             for r in results
         ],

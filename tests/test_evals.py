@@ -39,3 +39,16 @@ def test_real_scenarios_file_is_well_formed():
     ids = [s["id"] for s in data["scenarios"]]
     assert len(ids) == len(set(ids)) >= 12
     assert all(s["messages"] for s in data["scenarios"])
+
+
+def test_replies_must_not_mention_the_internal_manual():
+    assert check({}, [], ["Pelo manual, seção 4.1, pode."])  # both words flagged
+    assert check({}, [], ["Pela nossa política de trocas, sim."]) == []
+    assert check({}, [], ["com acessórios e manuais"]) == []  # plural product manuals are fine
+
+
+def test_list_item_limit():
+    five = "Opções:\n- a\n- b\n* c\n3. d\n• e"
+    four = "- a\n- b\n- c\n- d"
+    assert check({"max_list_items": 4}, [], [five])
+    assert check({"max_list_items": 4}, [], [four]) == []
