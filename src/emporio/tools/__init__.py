@@ -81,7 +81,8 @@ SCHEMAS: list[dict] = [
         "methods only above R$ 2.000). ALWAYS use this instead of doing the math yourself.",
         {
             "method": {"type": "string", "enum": ["pix", "debit", "credit", "boleto"]},
-            "installments": {"type": "integer", "description": "Credit installments (1-12).", "default": 1},
+            "installments": {"type": "integer", "minimum": 1, "maximum": 12,
+                             "description": "Credit installments (1-12).", "default": 1},
             "items": {
                 "type": "array",
                 "items": {

@@ -58,6 +58,11 @@ def test_more_than_12_installments_refused(conn):
     assert pay(conn, method="credit", installments=13, amount_brl=50000)["allowed"] is False
 
 
+def test_huge_installment_count_is_rejected_without_allocating(conn):
+    r = pay(conn, method="credit", installments=10**9, amount_brl=100)
+    assert r["allowed"] is False and "12x" in r["reason"] and "schedule_brl" not in r
+
+
 def test_installments_split_exactly(conn):
     r = pay(conn, method="credit", installments=3, amount_brl=100.00)
     assert sum(r["schedule_brl"]) == pytest.approx(100.0)

@@ -79,8 +79,11 @@ def calculate_payment(
     method = (method or "").strip().lower()
     if method not in METHODS:
         return _denied(f"Forma de pagamento desconhecida: '{method}'.")
+    installments = int(installments)
     if installments < 1:
         return _denied("O número de parcelas deve ser pelo menos 1.")
+    if method == "credit" and installments > MAX_INSTALLMENTS:
+        return _denied(f"O parcelamento vai até {MAX_INSTALLMENTS}x sem juros.")
 
     lines: list[dict[str, Any]] = []
     pix_eligible_cents = 0
@@ -140,9 +143,7 @@ def calculate_payment(
     elif method == "credit":
         out["max_installments"] = max_installments_for(total)
         out["max_installment_value_brl"] = brl(_split(total, out["max_installments"])[0])
-        if n > MAX_INSTALLMENTS:
-            reason = f"O parcelamento vai até {MAX_INSTALLMENTS}x sem juros."
-        elif total < min_installment_cents(n) * n:
+        if total < min_installment_cents(n) * n:
             reason = (
                 f"Em {n}x a parcela ficaria em {brl_text(schedule[0])}, abaixo do mínimo de "
                 f"{brl_text(min_installment_cents(n))} por parcela nessa faixa."
