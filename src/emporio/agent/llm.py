@@ -17,6 +17,7 @@ import openai
 from emporio.agent.config import Settings
 
 Message = dict[str, Any]
+DEFAULT_BASE_URL = "https://api.openai.com/v1"
 
 
 class LLMError(Exception):
@@ -69,7 +70,7 @@ class OpenAIClient:
         # SDK-level retries are off: this wrapper owns the retry policy.
         self._sdk = sdk or openai.OpenAI(
             api_key=settings.api_key,
-            base_url=settings.base_url,
+            base_url=settings.base_url or DEFAULT_BASE_URL,
             timeout=settings.timeout,
             max_retries=0,
         )

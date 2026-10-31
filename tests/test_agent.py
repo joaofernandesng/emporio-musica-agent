@@ -281,3 +281,40 @@ def test_base_url_without_scheme_is_rejected(monkeypatch, tmp_path):
         load_settings(env)
     for name in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL"):
         monkeypatch.delenv(name, raising=False)
+
+
+# ---- empty values, as copied from .env.example -----------------------------------------
+
+def _set_env(monkeypatch, **values):
+    for name in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+
+
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_blank_base_url_uses_the_openai_default(monkeypatch, blank):
+    _set_env(monkeypatch, OPENAI_API_KEY="k", OPENAI_MODEL="m", OPENAI_BASE_URL=blank)
+    settings = load_settings(None)
+    assert settings.base_url is None
+    client = OpenAIClient(settings)  # real SDK object, no network call
+    assert str(client._sdk.base_url).startswith("https://api.openai.com")
+
+
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_blank_model_or_key_counts_as_missing(monkeypatch, blank):
+    _set_env(monkeypatch, OPENAI_API_KEY="k", OPENAI_MODEL=blank)
+    with pytest.raises(ConfigError, match="OPENAI_MODEL"):
+        load_settings(None)
+    _set_env(monkeypatch, OPENAI_API_KEY=blank, OPENAI_MODEL="m")
+    with pytest.raises(ConfigError, match="OPENAI_API_KEY"):
+        load_settings(None)
+
+
+def test_env_example_copied_as_is_loads_base_url_as_default(monkeypatch, tmp_path):
+    example = (tmp_path / ".env")
+    example.write_text("OPENAI_API_KEY=k\nOPENAI_MODEL=m\nOPENAI_BASE_URL=\nEMPORIO_NOW=\n", encoding="utf-8")
+    _set_env(monkeypatch)
+    client = OpenAIClient(load_settings(example))
+    assert str(client._sdk.base_url).startswith("https://api.openai.com")
+    _set_env(monkeypatch)
