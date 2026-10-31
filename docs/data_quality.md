@@ -264,6 +264,23 @@ be asked to confirm them.
 **Decision:** history is reported as stored; `calculate_payment` enforces the
 manual for new quotes. The agent does not volunteer commentary on past orders.
 
+### O10. No receipt date; channel unknown — **ASSUMPTION**
+
+**Evidence:** `orders` has `order_date` and `estimated_delivery` but no real
+receipt date, and no sales channel (online vs. store).
+
+**Decision (orchestrator-approved):** (1) `estimated_delivery` stands in for the
+receipt date; (2) every system order has shipping and tracking, so it is treated
+as a remote (online) purchase, to which the 7-day right of withdrawal (4.1)
+applies. `get_order_status` computes `return_windows` for **delivered** orders
+only: withdrawal and preference exchange = receipt + 7 days (4.1, 4.3), defect
+exchange = purchase date + 30 days (4.2), legal warranty = receipt + 90 days
+(8.1), all calendar days, the deadline day included. Example, order 7 (bought
+2026-02-03, received ~2026-02-17) on 2026-03-25: withdrawal expired 2026-02-24,
+defect exchange expired 2026-03-05, legal warranty valid until 2026-05-18
+(54 days left). Other statuses get no windows. In-store purchases are not in the
+data; the agent explains that case from the policy text (no withdrawal right).
+
 ### O9. Other checks (clean)
 
 No orphan customers or products; every order has items; all tracking codes

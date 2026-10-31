@@ -21,6 +21,16 @@ to format or compute prices.
 | `search_policies` | Manual lookup | Keyword scoring over numbered sections of `data/processed/policies.md` (title weighs 3×, prefix matching, a few synonyms); returns 1–3 sections; no embeddings. |
 | `create_ticket` | Human hand-off | Appends to `data/runtime/tickets.jsonl` (git-ignored); validates type and contact; promises a reply in 24 business hours (manual 7.3). |
 
+## Return windows
+
+For a verified order with status `delivered`, `get_order_status` also returns
+`return_windows` (`arrependimento` 7 days, `troca_por_preferencia` 7 days from
+receipt; `troca_por_defeito` 30 days from purchase; `garantia_legal` 90 days from
+receipt). Each has `deadline`, `within_deadline`, `days_remaining`, `days_expired`
+and is computed with the single clock. Assumptions (see `data_quality.md` O10):
+`estimated_delivery` approximates the receipt date and system orders count as
+online purchases. Other statuses return `return_windows: null` plus a note.
+
 ## Clock
 
 Every tool that needs "now" or "today" (store hours, order delay, ticket

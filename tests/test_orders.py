@@ -86,3 +86,49 @@ def test_open_orders_report_age_but_are_never_delayed(conn):
     assert order["status"] in ("pending", "confirmed")
     assert order["delayed"] is False and order["days_overdue"] == 0
     assert order["days_since_order"] > 200
+
+
+def _email(conn, order_id):
+    return conn.execute(
+        "SELECT c.email_norm FROM orders o JOIN customers c USING (customer_id) WHERE o.order_id = ?",
+        (order_id,),
+    ).fetchone()[0]
+
+
+def test_order_7_return_windows_on_demo_date(conn, monkeypatch):
+    monkeypatch.setenv("EMPORIO_NOW", "2026-03-25T10:00")
+    order = get_order_status(7, _email(conn, 7), conn=conn)["order"]
+    w = order["return_windows"]
+    # received ~2026-02-17 (estimated delivery), bought 2026-02-03
+    assert w["arrependimento"]["deadline"] == "2026-02-24" and not w["arrependimento"]["within_deadline"]
+    assert w["arrependimento"]["days_expired"] == 29
+    assert w["troca_por_preferencia"]["deadline"] == "2026-02-24"
+    assert w["troca_por_defeito"]["deadline"] == "2026-03-05" and not w["troca_por_defeito"]["within_deadline"]
+    assert w["troca_por_defeito"]["days_expired"] == 20
+    assert w["garantia_legal"]["deadline"] == "2026-05-18" and w["garantia_legal"]["within_deadline"]
+    assert w["garantia_legal"]["days_remaining"] == 54
+
+
+def test_withdrawal_still_open_with_injected_clock(conn, monkeypatch):
+    monkeypatch.setenv("EMPORIO_NOW", "2026-02-20T09:00")
+    w = get_order_status(7, _email(conn, 7), conn=conn)["order"]["return_windows"]
+    assert w["arrependimento"]["within_deadline"] and w["arrependimento"]["days_remaining"] == 4
+    assert w["troca_por_defeito"]["within_deadline"]
+
+
+def test_deadline_day_itself_is_still_within(conn, monkeypatch):
+    monkeypatch.setenv("EMPORIO_NOW", "2026-02-24T18:00")
+    w = get_order_status(7, _email(conn, 7), conn=conn)["order"]["return_windows"]
+    assert w["arrependimento"]["within_deadline"] and w["arrependimento"]["days_remaining"] == 0
+
+
+def test_undelivered_order_has_no_return_windows(conn, monkeypatch):
+    monkeypatch.setenv("EMPORIO_NOW", "2026-03-25T10:00")
+    for order_id in (8, 9):  # shipped, pending/confirmed
+        order = get_order_status(order_id, _email(conn, order_id), conn=conn)["order"]
+        assert order["return_windows"] is None
+        assert "entregues" in order["return_windows_note"]
+
+
+def test_unverified_order_exposes_no_windows(conn):
+    assert "return_windows" not in str(get_order_status(7, "outro@x.com", conn=conn))

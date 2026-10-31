@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from emporio.tools.common import brl, brl_text, now_in_store_tz, open_db
@@ -59,6 +59,37 @@ def _payment_label(method: str | None) -> str | None:
     return PAYMENT_LABELS.get(method, method)
 
 
+# (key, policy, days, counted from) -- manual 4.1, 4.3, 4.2 and 8.1.
+RETURN_WINDOWS = (
+    ("arrependimento", "4.1", 7, "receipt"),
+    ("troca_por_preferencia", "4.3", 7, "receipt"),
+    ("troca_por_defeito", "4.2", 30, "purchase"),
+    ("garantia_legal", "8.1", 90, "receipt"),
+)
+RETURN_WINDOWS_BASIS = (
+    "O dataset não tem a data real de recebimento: usa-se a previsão de entrega como "
+    "aproximação. Pedidos do sistema são tratados como compras à distância (online)."
+)
+
+
+def return_windows(order_date: str, received: str, today: date) -> dict[str, Any]:
+    """Deadlines for withdrawal, exchange and warranty, computed from the single clock."""
+    start = {"receipt": date.fromisoformat(received), "purchase": date.fromisoformat(order_date[:10])}
+    windows: dict[str, Any] = {}
+    for key, policy, days, origin in RETURN_WINDOWS:
+        deadline = start[origin] + timedelta(days=days)
+        delta = (deadline - today).days
+        windows[key] = {
+            "policy": policy,
+            "counted_from": "recebimento (aproximado)" if origin == "receipt" else "data da compra",
+            "deadline": deadline.isoformat(),
+            "within_deadline": delta >= 0,
+            "days_remaining": max(delta, 0),
+            "days_expired": max(-delta, 0),
+        }
+    return windows
+
+
 def get_order_status(
     order_id: int,
     email_or_phone: str | None = None,
@@ -110,6 +141,15 @@ def get_order_status(
         ).fetchall()
 
     estimated = order["estimated_delivery"]
+    windows = None
+    windows_note = RETURN_WINDOWS_BASIS
+    if order["status"] == "delivered" and estimated:
+        windows = return_windows(order["order_date"], estimated, today)
+    else:
+        windows_note = (
+            "Sem janelas de troca/devolução: só pedidos entregues têm prazo contado a partir "
+            f"do recebimento (status atual: {STATUS_LABELS.get(order['status'], order['status'])})."
+        )
     days_since_order = max((today - date.fromisoformat(order["order_date"][:10])).days, 0)
     days_overdue = 0
     if order["status"] == "shipped" and estimated:
@@ -135,5 +175,7 @@ def get_order_status(
             "delayed": days_overdue > 0,
             "days_overdue": days_overdue,
             "notes": order["notes"],
+            "return_windows": windows,
+            "return_windows_note": windows_note,
         },
     }
