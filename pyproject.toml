@@ -7,6 +7,19 @@ name = "emporio"
 version = "0.1.0"
 description = "Text support agent for Empório da Música"
 requires-python = ">=3.11"
+# Exact pins live in requirements.txt (the lock); these are the same packages.
+dependencies = [
+    "openai==3.42.0",
+    "python-dotenv==1.2.4",
+    "pypdf==6.21.4",
+    "tzdata==2026.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.2.0"]
+
+[project.scripts]
+emporio = "emporio.agent.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
