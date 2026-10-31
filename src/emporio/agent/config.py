@@ -36,8 +36,7 @@ def load_settings(env_file: Path | None = ROOT / ".env") -> Settings:
             f"Configuração incompleta: defina {' e '.join(missing)} no arquivo .env "
             "(veja .env.example) ou no ambiente."
         )
-    return Settings(
-        api_key=api_key,
-        model=model,
-        base_url=os.environ.get("OPENAI_BASE_URL", "").strip() or None,
-    )
+    base_url = os.environ.get("OPENAI_BASE_URL", "").strip() or None
+    if base_url and not base_url.startswith(("http://", "https://")):
+        raise ConfigError("OPENAI_BASE_URL precisa começar com http:// ou https:// (ou ficar vazia).")
+    return Settings(api_key=api_key, model=model, base_url=base_url)

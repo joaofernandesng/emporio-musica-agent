@@ -270,3 +270,14 @@ def test_auth_error_is_not_retried():
     with pytest.raises(LLMError, match="autenticação"):
         OpenAIClient(SETTINGS, sdk=sdk, sleep=lambda s: None).chat([], [])
     assert sdk.calls == 1
+
+
+def test_base_url_without_scheme_is_rejected(monkeypatch, tmp_path):
+    env = tmp_path / ".env"
+    env.write_text("OPENAI_API_KEY=k\nOPENAI_MODEL=m\nOPENAI_BASE_URL=api.exemplo.com/v1\n", encoding="utf-8")
+    for name in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
+    with pytest.raises(ConfigError, match="OPENAI_BASE_URL"):
+        load_settings(env)
+    for name in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
