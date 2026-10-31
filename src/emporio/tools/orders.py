@@ -73,8 +73,10 @@ def get_order_status(
     missing, or the contact does not match, the SAME generic answer is returned, so
     nothing about the order or other customers is disclosed.
 
-    When verified, ``delayed`` is true if the order is ``shipped`` and its
-    estimated delivery date is before today (America/Campo_Grande). Item lines carry
+    When verified, ``delayed`` is true only if the order is ``shipped`` and its
+    estimated delivery date is before today (America/Campo_Grande). The manual sets
+    no processing deadline, so ``pending``/``confirmed`` orders are never flagged;
+    ``days_since_order`` lets the agent describe their age. Item lines carry
     product and quantity only: the data has no per-item unit price.
 
     Args:
@@ -108,6 +110,7 @@ def get_order_status(
         ).fetchall()
 
     estimated = order["estimated_delivery"]
+    days_since_order = max((today - date.fromisoformat(order["order_date"][:10])).days, 0)
     days_overdue = 0
     if order["status"] == "shipped" and estimated:
         days_overdue = max((today - date.fromisoformat(estimated)).days, 0)
@@ -119,6 +122,7 @@ def get_order_status(
             "status": order["status"],
             "status_label": STATUS_LABELS.get(order["status"], order["status"]),
             "order_date": order["order_date"],
+            "days_since_order": days_since_order,
             "items": [
                 {"product_id": i["product_id"], "name": i["name"], "quantity": i["quantity"]}
                 for i in items

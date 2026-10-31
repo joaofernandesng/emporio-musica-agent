@@ -76,3 +76,13 @@ def test_items_carry_no_unit_prices(conn):
     own = get_order_status(20, "thiago.barbosa@jmail.com", conn=conn)["order"]
     assert own["total_brl"] == 1400.0
     assert all(set(item) == {"product_id", "name", "quantity"} for item in own["items"])
+
+
+def test_open_orders_report_age_but_are_never_delayed(conn):
+    # Order 9 is pending/confirmed and months old: no processing deadline exists.
+    row = conn.execute("SELECT status, order_date, customer_id FROM orders WHERE order_id = 9").fetchone()
+    email = conn.execute("SELECT email_norm FROM customers WHERE customer_id = ?", (row["customer_id"],)).fetchone()[0]
+    order = get_order_status(9, email, today="2026-10-31", conn=conn)["order"]
+    assert order["status"] in ("pending", "confirmed")
+    assert order["delayed"] is False and order["days_overdue"] == 0
+    assert order["days_since_order"] > 200
