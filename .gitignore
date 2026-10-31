@@ -6,3 +6,4 @@ __pycache__/
 data/runtime/
 .pytest_cache/
 .remember/
+*.egg-info/
