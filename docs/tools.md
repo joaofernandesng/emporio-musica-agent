@@ -14,12 +14,21 @@ to format or compute prices.
 |---|---|---|
 | `search_products` | Catalog search with text + filters | Accent/case/plural-insensitive; all query words must match name, category or specs; price filters use the **current** price (promotion applied); unavailable products hidden unless `include_unavailable`; empty categories explain themselves in `notes`. |
 | `get_product` | One product by id or approximate name | Handles `gd 20` vs `GD20` and typos; ambiguous names return candidates; unreliable descriptions are withheld (see `data_quality.md` P1). |
-| `get_order_status` | Order lookup | Requires order id + e-mail/phone of the order's owner; **one identical generic answer** for unknown order, wrong contact and missing contact; flags `delayed` for overdue `shipped` orders; no unit prices (the data has none). |
+| `get_order_status` | Order lookup | Requires order id + e-mail/phone of the order's owner; **one identical generic answer** for unknown order, wrong contact and missing contact; flags `delayed` only for `shipped` orders past their estimate (open orders are not flagged: the manual sets no processing deadline) and reports `days_since_order`; no unit prices (the data has none). |
 | `calculate_payment` | Price, PIX, installments, combinations | PIX 5% only on items without promotion; tiers 2–3x ≥ R$ 50, 4–6x ≥ R$ 80, 7–12x ≥ R$ 100; combination only strictly above R$ 2.000; returns a Portuguese `reason` when refused plus `max_installments`. |
 | `estimate_shipping` | Shipping cost and lead time | Campo Grande: free strictly above R$ 500, else R$ 35, 1–3 business days. Other cities: no price (needs ZIP/weight), returns PAC/SEDEX/Jadlog with lead times. Drums, keyboards/pianos and basses are flagged as special freight. |
 | `get_store_hours` | Open/closed now, next opening | `America/Campo_Grande`; Mon–Fri 09–18, Sat 09–13; opening minute inclusive, closing minute exclusive; fixed list of national holidays 2025–2026. |
 | `search_policies` | Manual lookup | Keyword scoring over numbered sections of `data/processed/policies.md` (title weighs 3×, prefix matching, a few synonyms); returns 1–3 sections; no embeddings. |
 | `create_ticket` | Human hand-off | Appends to `data/runtime/tickets.jsonl` (git-ignored); validates type and contact; promises a reply in 24 business hours (manual 7.3). |
+
+## Clock
+
+Every tool that needs "now" or "today" (store hours, order delay, ticket
+timestamps) calls `emporio.tools.common.now_in_store_tz()`. The environment
+variable `EMPORIO_NOW` (ISO 8601, `America/Campo_Grande` unless it carries an
+offset) overrides the real clock; empty or unset means real time. The demo value
+used for examples and evals is `EMPORIO_NOW=2026-03-25T10:00`. The model cannot
+set the time: `get_store_hours` takes no arguments.
 
 ## Assumptions encoded in the tools
 

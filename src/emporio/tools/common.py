@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import sqlite3
 from contextlib import contextmanager
@@ -73,13 +74,25 @@ def tokens(text: str) -> list[str]:
     return [stem(t) for t in re.findall(r"[0-9a-zA-ZÀ-ÿ]+", text)]
 
 
-def now_in_store_tz(now: datetime | str | None = None) -> datetime:
-    """Return ``now`` (or the current time) as an aware datetime in the store TZ.
+CLOCK_ENV = "EMPORIO_NOW"
 
-    Naive datetimes/strings are interpreted as already being store-local time.
+
+def now_in_store_tz(now: datetime | str | None = None) -> datetime:
+    """Return ``now`` as an aware datetime in the store TZ: the single clock.
+
+    Without an argument, ``EMPORIO_NOW`` (ISO 8601, store local time unless it
+    carries an offset) overrides the real clock; empty or unset means real time.
+    Every tool that needs "now" or "today" goes through here. Naive
+    datetimes/strings are interpreted as already being store-local time.
     """
     if now is None:
-        return datetime.now(STORE_TZ)
+        now = os.environ.get(CLOCK_ENV, "").strip()
+        if not now:
+            return datetime.now(STORE_TZ)
+        try:
+            datetime.fromisoformat(now)
+        except ValueError as exc:
+            raise ValueError(f"{CLOCK_ENV} must be ISO 8601, got {now!r}") from exc
     if isinstance(now, str):
         now = datetime.fromisoformat(now)
     if now.tzinfo is None:

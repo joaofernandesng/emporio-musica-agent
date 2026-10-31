@@ -115,8 +115,8 @@ SCHEMAS: list[dict] = [
     _tool(
         "get_store_hours",
         "Say whether the store is open right now (Campo Grande time, holidays included) and "
-        "when it opens next.",
-        {"now": {"type": "string", "description": "Optional ISO datetime; defaults to the current time."}},
+        "when it opens next. Takes no arguments: the clock is handled by the program.",
+        {},
         [],
     ),
     _tool(
