@@ -131,6 +131,14 @@ BASELINE_WRONG = {
 }
 
 
+# Correct replies from the baseline run that the first version of the checks rejected.
+BASELINE_CORRECT = {
+    "pedido_18_cancelado": (
+        "Gustavo, conferi aqui: o pedido 18 está **cancelado**. Motivo informado: **item fora de estoque no"
+        " momento do pedido**. Como ele não foi entregue, não há janela de troca/devolução."),
+}
+
+
 def _tools_for(scenario):
     return list(scenario.get("tools_all", [])) + list(scenario.get("tools_any", [])[:1])
 
@@ -158,6 +166,12 @@ def test_wrong_reply_fails(scenario_id):
 def test_wrong_baseline_reply_fails(scenario_id):
     scenario = SCENARIOS[scenario_id]
     assert check(scenario, _tools_for(scenario), [BASELINE_WRONG[scenario_id]])
+
+
+@pytest.mark.parametrize("scenario_id", sorted(BASELINE_CORRECT))
+def test_correct_baseline_reply_passes(scenario_id):
+    scenario = SCENARIOS[scenario_id]
+    assert check(scenario, _tools_for(scenario), [BASELINE_CORRECT[scenario_id]]) == []
 
 
 def test_scenario_clock_overrides_the_default(tmp_path, monkeypatch):

@@ -1054,8 +1054,12 @@
       ],
       "must_not": [
         "a caminho",
-        "foi enviado",
-        "foi entregue"
+        "ja foi enviado",
+        "ja foi entregue",
+        "foi enviado em",
+        "foi entregue em",
+        "esta em transito",
+        "saiu para entrega"
       ]
     },
     {
