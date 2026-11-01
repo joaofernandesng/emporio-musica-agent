@@ -1,0 +1,9 @@
+{
+  "title": "Example 1: catalog and price",
+  "description": "Product search with a price ceiling, a follow-up filter and an exact price lookup.",
+  "messages": [
+    "Quais violões vocês têm até R$ 1.000?",
+    "e só os de nylon?",
+    "quanto custa o Takamine GD20?"
+  ]
+}

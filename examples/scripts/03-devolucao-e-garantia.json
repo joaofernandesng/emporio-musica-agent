@@ -1,0 +1,10 @@
+{
+  "title": "Example 3 (non-trivial): withdrawal, warranty and a ticket",
+  "description": "Combines live order data (return windows computed from the order) with the store policies, then hands a defect claim to a human through a ticket.",
+  "messages": [
+    "Me arrependi da minha compra, posso devolver?",
+    "foi online",
+    "Meu pedido é o 7 e meu e-mail é leticia.rocha@jmail.com",
+    "na verdade ele está com um defeito no tampo"
+  ]
+}

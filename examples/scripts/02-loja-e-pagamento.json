@@ -1,0 +1,10 @@
+{
+  "title": "Example 2: store info, opening hours and payment",
+  "description": "Address and hours from the policies, a real-time open/closed check, PIX discount rules on a promotional item and a credit-card installment.",
+  "messages": [
+    "Qual o endereço e o horário de funcionamento da loja?",
+    "vocês estão abertos agora?",
+    "se eu pagar o Crafter HT-100 no PIX tem os 5%?",
+    "e em 10x no cartão, quanto fica a parcela?"
+  ]
+}

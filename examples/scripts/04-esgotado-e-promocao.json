@@ -1,0 +1,9 @@
+{
+  "title": "Example 4: out-of-stock item and promotions",
+  "description": "An expired promotion on an out-of-stock product, an open question about active promotions and an active promotion with original price, percentage and final price.",
+  "messages": [
+    "o Giannini GF-3D ainda está na Semana do Músico com 40%?",
+    "e tem alguma promoção ativa em violão?",
+    "e o Crafter HT-100, quanto está?"
+  ]
+}
