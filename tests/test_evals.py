@@ -78,3 +78,8 @@ def test_global_bans_priority_and_sequential_warranty(reply):
 ])
 def test_global_bans_allow_the_correct_wording(reply):
     assert check({}, [], [reply]) == []
+
+
+def test_global_ban_on_mentioning_tools_to_the_customer():
+    assert check({}, [], ["A ferramenta confirmou que não há desconto."])
+    assert check({}, [], ["Conferi aqui no nosso catálogo."]) == []

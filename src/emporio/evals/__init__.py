@@ -45,6 +45,8 @@ GLOBAL_FORBIDDEN = (
     r"\bmanual\b", r"\bsecao\b", r"\bsecoes\b",
     # nothing the tools did not promise
     r"\bprioridade\b",
+    # the agent speaks as an attendant: it never mentions its tools to the customer
+    r"\bferramentas?\b",
     # the legal warranty runs IN PARALLEL with the 30-day exchange, never "after" it
     r"entra(m)? depois", r"garantia (legal )?(entra|vem|comeca|passa a valer) depois",
     r"depois (disso|desse prazo|da troca|dos 30 dias),? ?(entra|vale|vem|passa|a garantia)",

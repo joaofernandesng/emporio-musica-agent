@@ -433,6 +433,39 @@
           "telefone"
         ]
       ]
+    },
+    {
+      "id": "promocoes_ativas_violao",
+      "messages": [
+        "tem alguma promoção ativa em violão?"
+      ],
+      "tools_any": [
+        "search_products"
+      ],
+      "must": [
+        [
+          "crafter"
+        ],
+        [
+          "2.399,00",
+          "2399"
+        ],
+        [
+          "18%"
+        ],
+        [
+          "1.967,18",
+          "1967,18"
+        ]
+      ],
+      "must_not": [
+        "nao ha promocao",
+        "nenhuma promocao",
+        "nao encontrei nenhum",
+        "nao tem nenhuma promocao",
+        "nenhum violao com promocao",
+        "nao ha nenhum"
+      ]
     }
   ]
 }
