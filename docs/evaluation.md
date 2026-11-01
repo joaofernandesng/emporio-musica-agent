@@ -32,14 +32,14 @@ are for that version.
 
 ## Results of the final version
 
-58 of 63 runs passed (92%). Executions: 20/21, 20/21, 18/21. The previous
-validation (before the independent-review fixes) was 57/63; with a
-non-deterministic model and three runs per scenario the difference is within
-noise, but the per-scenario shifts are real and explained below.
+57 of 63 runs passed (90%). Executions: 18/21, 20/21, 19/21. The previous
+validation (after the independent-review fixes, before the verified-contact fix)
+was 58/63; with a non-deterministic model and three runs per scenario the
+difference is within noise. The per-scenario shifts are explained below.
 
-| Scenario | Passed | Before the review fixes |
+| Scenario | Passed | Previous round |
 |---|---|---|
-| violoes_ate_1000 | 3/3 | 2/3 |
+| violoes_ate_1000 | 2/3 | 3/3 |
 | preco_takamine_gd20 | 3/3 | 3/3 |
 | endereco_e_horario | 3/3 | 3/3 |
 | aberto_agora | 3/3 | 3/3 |
@@ -47,25 +47,25 @@ noise, but the per-scenario shifts are real and explained below.
 | produto_descontinuado_113 | 3/3 | 3/3 |
 | promocao_ativa_90 | 3/3 | 3/3 |
 | promocao_vencida_96 | 3/3 | 3/3 |
-| pix_com_promocao | 3/3 | 2/3 |
-| pedido_8_atrasado | 2/3 | 3/3 |
+| pix_com_promocao | 2/3 | 3/3 |
+| pedido_8_atrasado | 3/3 | 2/3 |
 | pedido_8_email_errado | 3/3 | 3/3 |
 | arrependimento_generico | 3/3 | 3/3 |
 | acessorio_cordas_amplificador | 3/3 | 3/3 |
 | fora_do_escopo_receita | 3/3 | 3/3 |
 | injecao_desconto | 3/3 | 3/3 |
-| reclamacao_ticket | 3/3 | 2/3 |
+| reclamacao_ticket | 3/3 | 3/3 |
 | arrependimento_pedido_7_vencido | 2/3 | 2/3 |
 | arrependimento_loja_fisica | 3/3 | 3/3 |
-| defeito_com_pedido_7 | **0/3** | 3/3 |
-| defeito_sem_pedido | 3/3 | 1/3 |
+| defeito_com_pedido_7 | **0/3** | 0/3 |
+| defeito_sem_pedido | 3/3 | 3/3 |
 | promocoes_ativas_violao | 3/3 | 3/3 |
-| **Total** | **58/63** | 57/63 |
+| **Total** | **57/63** | 58/63 |
 
-Cost of this validation: US$ 0.28 (332,715 tokens at US$ 0.75 / 4.50 per 1M
+Cost of this validation: US$ 0.28 (337,384 tokens at US$ 0.75 / 4.50 per 1M
 input/output tokens), about US$ 0.09 per full execution. Accumulated over all
-evaluation rounds: about US$ 1.53 and 1.81 M tokens (recording the example
-conversations cost about US$ 0.27 more over all recordings).
+evaluation rounds: about US$ 1.81 and 2.15 M tokens (recording the example
+conversations cost about US$ 0.29 more over all recordings).
 
 ## History
 
@@ -79,6 +79,7 @@ conversations cost about US$ 0.27 more over all recordings).
 | Freeze | 20 × 3 | 56/60 | The tool now returns `discount_brl`/`discount_text`; global bans for "prioridade" and sequential-warranty wording; the defect note is attached to every exchange or warranty section; the prompt asks for the order first on defects and for deadlines. |
 | Promotion fix | 21 × 3 | **57/63** | Recording example 4 showed the agent claiming there was no promotion on guitars: the search was capped at 20 results sorted by price and the model concluded "none" from an incomplete list (the evals had no scenario for it). The tool gained an `on_promotion` filter, `total_count`/`returned_count`/`truncated` and a warning note; the prompt now says to use the filter, not to conclude absence from a truncated list and never to mention internal tools to the customer. New scenario (3/3) and a global ban on the word "ferramenta". |
 | Independent review | 21 × 3 | **58/63** | A read-only review of the repository (fresh session, no context from the build) found that the defect/warranty note returned by `search_policies` told the model to open a ticket for any exchange or warranty question, contradicting the prompt (tickets only on complaint, defect or delay). The note now states the rule only. Same round: accessory plurals, "Campo Grande/MS" in shipping, tool arguments outside the schema (now dropped), category words in product names and a stale clock in resumed sessions. Effect: `defeito_sem_pedido` went from 1/3 to 3/3, but `defeito_com_pedido_7` fell from 3/3 to 0/3 (see below). |
+| Verified contact | 21 × 3 | **57/63** | `defeito_com_pedido_7` had fallen to 0/3 because the agent asked for an e-mail or phone again after the order was verified. `get_order_status` now returns `verified_contact` (the contact the customer gave in that query, normalised, never one from the customer record) and the ticket rule says to use it. Effect: no reply asked for the contact again, but the agent now offers the ticket instead of opening it, so the scenario still fails 0/3 (see below). |
 
 Design lesson: facts and rules that must be exact (prices, discounts, deadlines,
 alternatives, what the store does not sell) were moved into deterministic tools;
@@ -95,17 +96,17 @@ and a ticket opened before asking for the order) matched an instruction inside a
 tool note, which was removed in the last round. What remains:
 
 - **`defeito_com_pedido_7` (0/3), the main open problem.** With the order
-  already verified, the agent explains the deadlines correctly but asks for an
-  e-mail or phone *again* before opening the ticket, instead of reusing the
-  verified contact. The removed tool note used to push it straight into
-  `create_ticket`, which hid this. The prompt only says to reuse the verified
-  contact for late orders. The fix (the order tool returning the verified
-  contact for the ticket, or one prompt sentence for every hand-off) is the
-  first item of "what I would do with more time"; it was not applied because the
-  agent was frozen after this validation.
-- **`pedido_8_atrasado` (2/3) and `arrependimento_pedido_7_vencido` (2/3):** the
-  same re-asking of a verified contact; once the reply also promised
-  "prioridade", which the global ban caught.
+  already verified, the agent explains the deadlines correctly and, since the
+  verified-contact fix, no longer asks for an e-mail or phone again (the checks
+  that ban re-asking passed 3/3). It now stops one step early: it offers to open
+  the ticket and waits for a yes, so `create_ticket` is not called and the check
+  for "24 horas" fails in two of the three runs. The check was not relaxed.
+- **`arrependimento_pedido_7_vencido` (2/3):** once, after an expired withdrawal,
+  the agent opened a ticket nobody asked for.
+- **`pix_com_promocao` (2/3):** once the agent answered from `get_product`
+  without calling `calculate_payment`; the amounts it gave were the tool's.
+- **`violoes_ate_1000` (2/3):** once the reply listed 8 guitars, above the limit
+  of 4.
 - **Alternatives** are matched by category, string type, string count (read from
   the product name, since it is not a structured spec) and price; they do not
   distinguish acoustic from electro-acoustic.
