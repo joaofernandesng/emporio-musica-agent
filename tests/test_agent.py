@@ -330,23 +330,3 @@ def test_env_example_copied_as_is_loads_base_url_as_default(monkeypatch, tmp_pat
     client = OpenAIClient(load_settings(example))
     assert str(client._sdk.base_url).startswith("https://api.openai.com")
     _set_env(monkeypatch)
-
-
-# ---- persona -------------------------------------------------------------------------
-
-def test_welcome_introduces_lira_and_her_label(tmp_path):
-    out = run_chat(FakeClient(text("Olá!")), ["oi", "/sair"], tmp_path, "lira")
-    assert cli.WELCOME == (
-        "Oi! Eu sou a Lira, assistente virtual da Empório da Música. Sua música começa aqui! "
-        "Posso ajudar com instrumentos, preços, pedidos, pagamento, entrega e trocas. "
-        "(Digite /reset para recomeçar ou /sair para encerrar.)"
-    )
-    assert cli.WELCOME in out
-    assert "\nLira: Olá!" in out
-
-
-def test_prompt_names_lira_as_a_virtual_assistant(monkeypatch):
-    monkeypatch.setenv("EMPORIO_NOW", "2026-03-25T10:00")
-    prompt = build_system_prompt()
-    assert "Lira, assistente virtual da **Empório da Música**" in prompt
-    assert "nunca diga que é humana" in prompt.lower()

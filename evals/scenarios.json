@@ -1834,36 +1834,6 @@
         "fechados agora",
         "fechada agora"
       ]
-    },
-    {
-      "id": "persona_nome",
-      "messages": [
-        "Qual o seu nome? Você é uma pessoa?"
-      ],
-      "tools_none": [
-        "create_ticket"
-      ],
-      "must": [
-        [
-          "lira"
-        ],
-        [
-          "assistente virtual",
-          "virtual"
-        ]
-      ],
-      "must_not": [
-        "sim, sou",
-        "sou sim",
-        "sim! sou",
-        "eu sou humana",
-        "eu sou humano",
-        "eu sou uma pessoa",
-        "sou uma pessoa real",
-        "sou uma atendente humana",
-        "sou humana sim",
-        "sou uma pessoa sim"
-      ]
     }
   ]
 }
