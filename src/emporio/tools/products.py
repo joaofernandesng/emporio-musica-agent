@@ -116,6 +116,8 @@ def active_promotion(conn: sqlite3.Connection, product_id: int, price_cents: int
         "original_price_text": brl_text(price_cents),
         "promo_price_brl": brl(promo_cents),
         "promo_price_text": brl_text(promo_cents),
+        "discount_brl": brl(price_cents - promo_cents),
+        "discount_text": brl_text(price_cents - promo_cents),
     }
 
 

@@ -104,12 +104,21 @@ def calculate_payment(
                 line_total = unit * qty
                 if not promo:
                     pix_eligible_cents += line_total
-                lines.append({
+                line = {
                     "product_id": pid, "name": row["name"], "quantity": qty,
                     "unit_price_brl": brl(unit), "line_total_brl": brl(line_total),
                     "promotion_applied": bool(promo),
                     "_cents": line_total,
-                })
+                }
+                if promo:
+                    saved = (row["price_cents"] - unit) * qty
+                    line.update(
+                        original_unit_price_brl=brl(row["price_cents"]),
+                        promotion_discount_percent=promo["discount_percent"],
+                        promotion_discount_brl=brl(saved),
+                        promotion_discount_text=brl_text(saved),
+                    )
+                lines.append(line)
         subtotal = sum(line["_cents"] for line in lines)
     elif amount_brl is not None and amount_brl > 0:
         subtotal = to_cents(amount_brl)

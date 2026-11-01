@@ -102,3 +102,18 @@ def test_invalid_input(conn):
 def test_min_installment_tiers():
     assert [min_installment_cents(n) for n in (1, 2, 3, 4, 6, 7, 12)] == [0, 5000, 5000, 8000, 8000, 10000, 10000]
     assert max_installments_for(100_000) == 10      # R$ 1.000 / 10 = 100
+
+
+def test_promotional_line_reports_the_discount_amount(conn):
+    out = calculate_payment("pix", items=[{"product_id": 90}], conn=conn)
+    line = out["lines"][0]
+    assert line["promotion_applied"] is True
+    assert line["original_unit_price_brl"] == 2399.00
+    assert line["promotion_discount_percent"] == 18 and line["promotion_discount_brl"] == 431.82
+    two = calculate_payment("credit", 2, items=[{"product_id": 90, "quantity": 2}], conn=conn)["lines"][0]
+    assert two["promotion_discount_brl"] == 863.64  # whole line: 2 x 431.82
+
+
+def test_line_without_promotion_has_no_discount_fields(conn):
+    line = calculate_payment("pix", items=[{"product_id": 95}], conn=conn)["lines"][0]
+    assert "promotion_discount_brl" not in line

@@ -122,3 +122,14 @@ def test_plural_and_accent_insensitive_query(conn):
     assert search_products(query="ukuleles", conn=conn)["count"] > 0
     assert (search_products(query="violao", conn=conn)["count"]
             == search_products(query="VIOLÕES", conn=conn)["count"])
+
+
+def test_promotion_exposes_discount_amount_in_brl(conn):
+    promo = get_product(product_id=90, conn=conn)["product"]["promotion"]
+    assert promo["original_price_brl"] == 2399.00 and promo["promo_price_brl"] == 1967.18
+    assert promo["discount_brl"] == 431.82 and promo["discount_text"] == "R$ 431,82"
+
+
+def test_search_results_carry_discount_amount(conn):
+    item = search_products(query="Crafter HT-100", conn=conn)["results"][0]
+    assert item["promotion"]["discount_brl"] == 431.82
