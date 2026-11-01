@@ -1,0 +1,245 @@
+# Empório da Música: customer-support agent
+
+A text-based support agent for a (fictional) musical instruments store in Campo Grande/MS. It answers in Portuguese, in the tone of the store's own service guidelines, and decides on every message whether it needs **live data** (catalog, prices, stock, promotions, orders), the **store policies** (exchanges, payment, hours, shipping), or neither (small talk, out-of-scope requests).
+
+- Python 3.11+, command-line chat, the official `openai` SDK and a hand-written tool-calling loop (no agent framework).
+- Data lives in SQLite built from the supplied CSVs; the policies manual is converted to sectioned Markdown.
+- Anything that must be exact (prices, discounts, installments, deadlines, shipping, who may see an order) is computed by deterministic Python tools, never by the model.
+- 201 offline tests; 20 scenario evals against the real model (56/60 runs passed, see [Evaluation](#5-evaluation)).
+
+A short taste (full transcripts in [`examples/`](examples/)):
+
+```text
+Cliente:   Quanto custa o Takamine GD20?
+Atendente: O Takamine GD20 Dreadnought Natural está por R$ 2.199,00.
+           Se quiser, eu também posso te passar as especificações ou te mostrar opções parecidas mais baratas.
+           [tool called: get_product(name="Takamine GD20")]
+```
+
+## Contents
+
+1. [Quick start](#1-quick-start) · 2. [Architecture](#2-architecture) · 3. [Technical decisions](#3-technical-decisions) · 4. [Example conversations](#4-example-conversations) · 5. [Evaluation](#5-evaluation) · 6. [Assumptions](#6-assumptions) · 7. [Known limitations and next steps](#7-known-limitations-and-what-i-would-do-with-more-time) · 8. [AI coding assistants](#8-ai-coding-assistants) · 9. [Project structure](#9-project-structure-and-data-handling)
+
+## 1. Quick start
+
+**Requirements:** Python 3.11 or newer and an OpenAI API key (or any OpenAI-compatible endpoint).
+
+```bash
+# 1. environment
+python -m venv .venv
+source .venv/bin/activate          # Linux/macOS
+# .venv\Scripts\Activate.ps1       # Windows PowerShell
+
+pip install -e ".[dev]"            # exact versions are also pinned in requirements.txt
+
+# 2. configuration
+cp .env.example .env               # Windows: copy .env.example .env
+# edit .env and set OPENAI_API_KEY
+```
+
+| Variable | Meaning |
+|---|---|
+| `OPENAI_API_KEY` | Your key (required). `.env` is git-ignored. |
+| `OPENAI_MODEL` | Chat model. Prefilled with `gpt-5.4-mini`. |
+| `OPENAI_BASE_URL` | Optional. Endpoint of an OpenAI-compatible provider; empty means OpenAI. |
+| `EMPORIO_NOW` | Optional. Fixed "current time" (ISO 8601, store time), e.g. `2026-03-25T10:00`; empty means the real clock. |
+| `OPENAI_PRICE_INPUT_PER_1M`, `OPENAI_PRICE_OUTPUT_PER_1M` | Optional. USD per 1M tokens (prefilled for `gpt-5.4-mini`), used only for cost estimates. |
+
+The SQLite database is built automatically from `data/raw/` the first time a tool needs it (`python -m emporio.build_db` rebuilds it by hand).
+
+**Chat**
+
+```bash
+python -m emporio                          # new conversation
+python -m emporio --trace                  # also show which tools were called, with arguments
+python -m emporio --now 2026-03-25T10:00   # simulate the store clock (Wednesday 10:00, open)
+python -m emporio --session abc123         # resume a saved conversation (data/runtime/sessions/)
+```
+
+Inside the chat: `/reset` starts over, `/sair` quits (Ctrl+C also exits cleanly). Without a key or model the program prints a clear configuration message and exits.
+
+**Tests** (offline, no key needed, about 3 seconds)
+
+```bash
+pytest
+```
+
+**Evals** (real model; one full execution of the 20 scenarios costs about US$ 0.09 with `gpt-5.4-mini`)
+
+```bash
+EMPORIO_NOW=2026-03-25T10:00 python -m emporio.evals                       # Linux/macOS
+$env:EMPORIO_NOW="2026-03-25T10:00"; python -m emporio.evals               # Windows PowerShell
+python -m emporio.evals --only produto_esgotado_96                         # a single scenario
+```
+
+**Re-record the example conversations** (about US$ 0.02 each)
+
+```bash
+python -m emporio.demo examples/scripts/01-catalogo.json                   # writes examples/01-catalogo.md
+```
+
+## 2. Architecture
+
+```mermaid
+flowchart LR
+    C["Customer"] --> CLI["CLI<br/>python -m emporio"]
+    CLI --> LOOP["Agent loop<br/>(history window, max 6 iterations)"]
+    LOOP <-->|"messages + tool schemas"| LLM["LLM<br/>gpt-5.4-mini"]
+    LOOP -->|"tool calls"| TOOLS["8 deterministic tools"]
+    TOOLS --> DB[("SQLite store.db<br/>products, orders, promotions")]
+    TOOLS --> POL["policies.md<br/>sectioned manual"]
+    TOOLS --> TK["tickets.jsonl"]
+    LOOP --> SES["sessions/*.jsonl"]
+    LOOP --> CLI
+```
+
+Each turn: the user message goes to the model together with the tool schemas; if the model asks for tools, the loop runs them (several at once if requested), returns the JSON results and asks again, until the model answers in plain text (or the iteration limit produces a polite fallback). A failing tool becomes an error result the model can react to, never an exception. If the model API fails, the turn is rolled back so history stays consistent.
+
+| Tool | What it does |
+|---|---|
+| `search_products` | Catalog search with text, category, price and string-type filters; hides unavailable items; suggests alternatives; recognises accessory requests. |
+| `get_product` | One product by id or approximate name: price, promotion, availability, specs, alternatives for unavailable items. |
+| `get_order_status` | Order lookup after verifying e-mail/phone; delay flag; return, exchange and warranty deadlines for delivered orders. |
+| `calculate_payment` | PIX discount, installments (minimums per range), combined payment methods; all arithmetic in integer cents. |
+| `estimate_shipping` | Free/flat shipping in Campo Grande, carrier options elsewhere, special freight for large instruments. |
+| `get_store_hours` | Open/closed now and next opening, with the store time zone and national holidays. |
+| `search_policies` | Keyword search over the sectioned policies manual; adds guidance notes (official contact, defect and warranty rule). |
+| `create_ticket` | Hands a complaint or claim to a human (promises a reply within 24 business hours). |
+
+## 3. Technical decisions
+
+**Agent approach: native tool calling, hand-written loop.**
+*Considered:* vector RAG over everything, an SQL-writing agent, ReAct prompting, and frameworks (LangChain, LlamaIndex, CrewAI).
+*Why this:* the task is "know when to look up data vs. policy", which is exactly what function calling expresses. Most questions need exact structured answers (price, stock, order status), where retrieval of text chunks is the wrong tool; an SQL agent would let the model write queries over customer data and own the business rules; a framework would hide a loop that is about 100 lines and that I wanted to control (history window, rollback, limits, tracing). The manual is small enough for simple retrieval (next point), so the design is a hybrid: tools for data, keyword retrieval for text.
+
+**Model and provider: `gpt-5.4-mini` via Chat Completions.**
+*Considered:* cheaper small models and older mini models, local models.
+*Why:* it supports tool calling, defaults to no extra reasoning (predictable cost and latency) and costs US$ 0.75 / 4.50 per 1M input/output tokens; a whole 20-scenario eval costs about US$ 0.09. My first shortlist included models that OpenAI's documentation marks as deprecated, so I dropped them. The request only sends `model`, `messages` and `tools` (no sampling or reasoning parameters), and `OPENAI_BASE_URL` lets any OpenAI-compatible provider be used. The client retries transient errors (429, 5xx, timeouts) twice with backoff and never retries authentication errors.
+
+**Policies: sectioned Markdown plus keyword search, no embeddings.**
+The manual is about eight pages (roughly two dozen sections). I rewrote the PDF as Markdown with one numbered section per heading and a script checks the Markdown against the PDF word by word. Retrieval is a small keyword scorer (accent and plural insensitive, title matches weigh more, a few synonyms) that returns up to three sections. *Why not embeddings:* at this size they add a dependency, a cost and an opaque ranking for no accuracy gain, and a lexical miss is easy to debug in `--trace`. *When I would switch:* if the manual grows to dozens of pages, if paraphrase misses show up in the evals, or if the customer-facing language mix grows; then hybrid keyword + embedding retrieval.
+
+**Data handling: SQLite, integer cents, derived flags, raw files untouched.**
+The CSVs are loaded into SQLite; money is stored as integer cents; problems found in the data become derived columns and flags instead of edits (`availability`, `description_reliable`, `total_matches_list`, normalised phone/e-mail). `data/raw/` is never modified and its checksums are recorded. Examples of what the quality pass found: 7 products whose description contradicts their name or specs (withheld from answers), a product listed as "coming soon" with stock, orders 3 and 20 whose total does not match price times quantity, three credit orders that break the installment minimum, and two conflicting contact numbers in the manual. Full evidence and decisions: [`docs/data_quality.md`](docs/data_quality.md), file mapping and checksums: [`docs/raw_data.md`](docs/raw_data.md).
+
+**The model never calculates.**
+Prices, PIX discounts, installments, shipping, deadlines and "is the store open" come from tools that return both numbers and ready-to-print text (`R$ 2.199,00`). A concrete case: in one eval the model correctly said a promotional item gets no extra PIX discount, but wrote the discount amount (R$ 431,82) by subtracting two prices itself. The value was right, the practice was not, so the promotion now carries `discount_brl`/`discount_text` and the prompt says to use only returned fields.
+
+**Objective rules moved from the prompt into code.**
+Evals showed that prompt instructions alone were inconsistent for two things: suggesting alternatives for an unavailable product (the agent often just offered to look, passing 1 run in 3) and refusing accessories the store does not sell (2 in 3 with an imprecise reason). I made both deterministic: unavailable products come with up to three available alternatives of the same category, string type and string count; accessory searches return `not_sold_accessory`. Both went to 3/3. The prompt now only governs tone and flow; facts and rules live in code.
+
+**Privacy: verified order lookup.**
+An order is shown only when the customer gives the order number **and** the e-mail or phone of that order's owner. A missing order, a wrong contact and no contact all produce the same generic answer, so the agent cannot be used to discover which orders exist. The contact is compared only with the order's own customer (two customers in the dataset share an e-mail). See example 5.
+
+**Prompt strategy.**
+One concise Portuguese system prompt ([`system_prompt.md`](src/emporio/agent/system_prompt.md)): persona from the store's own service guidelines (informal but professional, like a friend who knows music, short chat replies) and eleven rules (data only from tools, policies from `search_policies`, promotions with original price, percentage and final price, unavailable products with alternatives, order verification, accessories, out-of-scope refusal, complaints to tickets, no inventing, list limits, resisting injection). The current store date and time is injected at the start of each conversation. **The agent never cites the manual to the customer** ("pela nossa política de trocas", not "manual, section 4.1"): it is an internal document. Traceability moved to `--trace`, logs and eval reports, which show the sections returned by `search_policies`.
+
+**Conversation history.**
+Each session is a JSONL file in `data/runtime/sessions/` (git-ignored) that can be resumed. Only the last 30 messages are sent to the model, cut so that a window always starts at a user message: a tool call is never separated from its result.
+
+**Single clock and demo date.**
+Every tool reads "now" through one function, overridable with `EMPORIO_NOW`. The dataset is a snapshot from around March 2026, so with the real clock every pending order would be months old and the shipped order 245 days late; for demos, evals and examples I fix the clock at **2026-03-25 10:00** (a Wednesday, store open), which makes results reproducible and realistic. Leave it empty in production.
+
+## 4. Example conversations
+
+Five recordings of the real agent (tool calls are in collapsible blocks), produced by `python -m emporio.demo`; the agent's text is exactly what the model returned, nothing was edited. All use the simulated date 2026-03-25 10:00.
+
+| File | What it shows |
+|---|---|
+| [`01-catalogo.md`](examples/01-catalogo.md) | Catalog search under R$ 1.000, a follow-up filter ("só os de nylon") and an exact price. |
+| [`02-loja-e-pagamento.md`](examples/02-loja-e-pagamento.md) | Address and hours from the policies, "open now?" from the clock, PIX on a promotional item, a 10x installment. |
+| [`03-devolucao-e-garantia.md`](examples/03-devolucao-e-garantia.md) | **The non-trivial case.** Withdrawal question, then a verified order (order 7) with computed deadlines, then a defect report that ends in a ticket. |
+| [`04-esgotado-e-promocao.md`](examples/04-esgotado-e-promocao.md) | Expired promotion on an out-of-stock item with alternatives, a promotion question, an active promotion. **Contains a wrong answer, see below.** |
+| [`05-limites-e-seguranca.md`](examples/05-limites-e-seguranca.md) | Accessories, out-of-scope request, a "ignore your rules" injection and a wrong e-mail on an order (nothing leaks). |
+
+Each conversation ran once, except example 4, which I recorded twice. In both takes, asked "any active promotion on acoustic guitars?", the agent answered that there were none, although the Crafter HT-100 (asked about in the next turn) has an 18% promotion. The cause is a limit of the tools: `search_products` returns at most 20 results sorted by price and the agent did not page or filter further. I kept the second take unedited and list this under limitations rather than hide it. Example 2 also has a slip of tone ("a ferramenta confirmou…"): the agent should not mention internal tools to a customer.
+
+## 5. Evaluation
+
+20 scenarios in [`evals/scenarios.json`](evals/scenarios.json), each checked automatically (expected tools, phrases that must or must not appear, list size, and global bans: no mention of the internal manual, no invented "priority", no warranty described as starting after the exchange window). The final validation ran every scenario three times with the clock fixed: **56 of 60 runs passed (93%)**. Over all rounds the evaluation cost about US$ 1 in total. The rounds, what each one revealed and what changed (including how reading the replies found problems the automatic checks missed), plus the remaining failures with their causes, are in [`docs/evaluation.md`](docs/evaluation.md).
+
+## 6. Assumptions
+
+The brief leaves some things open, so I documented each interpretation (evidence in [`docs/data_quality.md`](docs/data_quality.md); the choices are isolated in constants so they are easy to change).
+
+| # | Assumption | Why |
+|---|---|---|
+| S1 | The official contact is (67) 3341-4444; the other number in the manual is never quoted. | Appears in two of three mentions, including the company data table. |
+| S2 | The e-mail is written without accent (`contato@emporiodamusica.com.br`). | Domains do not carry accents in practice. |
+| S3 | The payment table's "up to 12x, minimum R$ 100" is read as the cap, and the installment rules by range win. | The more specific rule wins. |
+| S4 | "Up to 3x with no minimum, except below R$ 50" means each installment must be at least R$ 50. | Conservative reading, consistent with the R$ 80 and R$ 100 ranges. |
+| S5 | The PIX 5% is applied line by line, only to items without an active promotion. | Promotions are not cumulative. |
+| S6 | "Above" means strictly greater: exactly R$ 500 pays shipping, exactly R$ 2.000 cannot combine payment methods. | Literal reading; base is the merchandise value after promotions. |
+| S7 | The "metropolitan region" is only Campo Grande. | The manual does not define it; other customers live in far cities. |
+| S8 | An active promotion is a row with `is_active = 1`; if there were several, the largest percentage wins. | The table has no dates. |
+| S9 | Order totals exclude shipping. | 18 of 20 orders match the merchandise exactly. |
+| S10 | For defects the agent quotes the 30-day exchange (from purchase) and the 90-day legal warranty (from receipt) as running in parallel, promises no outcome and opens a ticket. | The two manual sections otherwise read as contradictory. |
+| S11 | The catalog wins over the manual's "more than 300 instruments": empty categories are reported as "no items listed now" with an offer of a ticket. | Avoid misleading advertising. |
+| S12 | A product description that contradicts its name or specs is never used as fact. | Name and structured fields are the source of truth. |
+| S13 | The store opens at the start minute and closes at the closing minute (exclusive). | The manual does not say what happens at the exact minute. |
+| S14 | Price filters use the current price (promotion applied). | It is what the customer pays. |
+| S15 | `pending` and `confirmed` orders are never called late; only `shipped` orders past their estimate are. | The manual defines no processing deadline. |
+| S16 | The receipt date is approximated by the order's estimated delivery date, and every order in the system counts as a remote (online) purchase. | The data has no real receipt date or sales channel. Return windows: withdrawal and preference exchange 7 days from receipt, defect exchange 30 days from purchase, legal warranty 90 days from receipt. |
+| S17 | "7 strings" is read from the product name when suggesting alternatives. | It is not a structured spec; the name is the source of truth. |
+| S18 | Accessory requests are recognised by a fixed word list (strings, cables, picks, pedals, amplifiers, cases, covers, bags, tuners, stands, drumsticks, straps), ignoring uses like "7 cordas" or "with built-in tuner". | The store sells instruments only. |
+| S19 | Holidays are the fixed national list for 2025-2026. | The manual lists none. |
+| S20 | In-store purchases are not in the data; the agent explains from the policy text that withdrawal rights apply to online purchases. | The manual states the withdrawal right for online purchases. |
+
+## 7. Known limitations and what I would do with more time
+
+**Known limitations**
+
+- **Promotions across the catalog:** the agent cannot reliably answer "which items are on promotion", because the search is capped at 20 sorted results (example 4).
+- **Model consistency:** a few eval scenarios still fail occasionally (opening a ticket nobody asked for, asking again for a contact that was already verified, an awkwardly worded refusal). Details and rates in [`docs/evaluation.md`](docs/evaluation.md).
+- **Alternatives** do not distinguish acoustic from electro-acoustic guitars.
+- **Order data** is shown as stored (statuses months old, no unit prices), and the receipt date is approximated (S16).
+- **Retrieval** is lexical: paraphrases without shared words can miss.
+- **Evaluation** used one model, one fixed date and three runs per scenario: indicative, not statistical.
+- It is a CLI prototype: no real WhatsApp channel and the human hand-off is a JSONL file.
+
+**With more time, in priority order**
+
+1. Fix the promotion gap in the tools (a promotion filter and an honest total count) and re-run the evals.
+2. Make "reuse the verified contact" deterministic (the order tool returning a verified-contact token) instead of relying on the prompt.
+3. Real delivery dates and sales channel in the data; real WhatsApp integration with a proper human hand-off and ticket queue.
+4. Stronger evals: LLM-as-judge for tone, more executions per scenario, adversarial and multi-turn injection cases.
+5. Observability: structured logs, cost and latency per conversation, tracing of tool use.
+6. A small API (FastAPI) and deployment, prompt caching and a fallback model.
+7. CI running the offline tests (and a nightly eval).
+8. Embedding or hybrid retrieval if the manual grows; acoustic/electro-acoustic awareness in the alternatives.
+
+## 8. AI coding assistants
+
+I built this with Claude, in two roles. *TODO(João): review this whole section; I wrote it from my notes of the workflow and you should correct anything that is not exactly how it went.*
+
+- **Claude (chat) as planner and reviewer.** It split the work into stages, wrote the prompt for each stage, reviewed every report and diff, and took the decisions with me. *TODO(João): confirm which Claude model/app and roughly how long the planning sessions were.*
+- **Claude Code on my computer to implement each stage**, under explicit rules: small commits, tests before code, no push, never read the `.env`, never touch the files in `data/raw/`. The commits carry a `Co-Authored-By` line for it.
+- **My part:** I read each stage's report, approved or sent it back, and made the final choices (model, scope, assumptions, what to freeze). *TODO(João): confirm this describes your involvement, and add anything you did by hand.*
+
+Four real moments of the process:
+
+1. **The first model choice was wrong.** The model first suggested was deprecated according to OpenAI's documentation; I checked the docs and switched to `gpt-5.4-mini`.
+2. **A bug found by reasoning about the setup.** The app crashed with an invalid-URL error when `OPENAI_BASE_URL` was left empty, exactly as in `.env.example`. We first guessed a malformed value; the real cause was that an empty variable is not an absent one for the SDK. It was reproduced with a failing test, then fixed in the configuration and the client.
+3. **Reversing an earlier instruction.** The agent first cited "the manual, section X". Once it was clear the manual is an internal document, I changed the rule: the agent now explains the policy in its own words and the traceability moved to the tool traces and eval reports.
+4. **Evals changed the architecture.** Reading the replies showed the prompt was inconsistent for alternatives, accessories and discount amounts; those rules moved into tools, and the pass rate went from 52/57 to 56/60 while the checks got stricter.
+
+## 9. Project structure and data handling
+
+```text
+data/raw/            supplied CSVs and the policies PDF, never edited (checksums in docs/raw_data.md)
+data/processed/      policies.md, the manual as numbered Markdown sections
+data/runtime/        generated and git-ignored: store.db, sessions, tickets, eval reports
+src/emporio/
+  build_db.py        CSV -> SQLite, derived columns and flags
+  tools/             the 8 tools (+ registry and OpenAI schemas in __init__.py)
+  agent/             config, LLM client, system prompt, loop, sessions, CLI
+  evals/             scenario runner (python -m emporio.evals)
+  demo.py            conversation recorder (python -m emporio.demo)
+evals/scenarios.json 20 eval scenarios
+examples/            5 recorded conversations and their scripts
+docs/                data_quality.md, tools.md, agent.md, evaluation.md, raw_data.md
+scripts/             quality_checks.py (evidence for the data report), verify_policies.py
+tests/               offline tests with a scripted fake model
+```
+
+How the data was treated, with evidence and the decision for each finding, is in [`docs/data_quality.md`](docs/data_quality.md); the tools and the assumptions encoded in them are in [`docs/tools.md`](docs/tools.md); configuration and request compatibility are in [`docs/agent.md`](docs/agent.md).
