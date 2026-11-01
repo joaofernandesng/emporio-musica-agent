@@ -212,7 +212,7 @@ The brief leaves some things open, so I documented each interpretation (evidence
 
 ## 8. AI coding assistants
 
-I built this with Claude, in two roles. *TODO(João): review this whole section; I wrote it from my notes of the workflow and you should correct anything that is not exactly how it went.*
+I built this with Claude, in two roles. *TODO(João): review this whole section before publishing. It was drafted from the workflow described to the assistant; correct anything that is not exactly how it went, then delete the TODO markers.*
 
 - **Claude (chat) as planner and reviewer.** It split the work into stages, wrote the prompt for each stage, reviewed every report and diff, and took the decisions with me. *TODO(João): confirm which Claude model/app and roughly how long the planning sessions were.*
 - **Claude Code on my computer to implement each stage**, under explicit rules: small commits, tests before code, no push, never read the `.env`, never touch the files in `data/raw/`. The commits carry a `Co-Authored-By` line for it.
