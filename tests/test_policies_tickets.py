@@ -93,13 +93,43 @@ def test_every_schema_matches_a_function_signature():
 def test_call_tool_returns_json_strings():
     out = json.loads(call_tool("get_product", '{"name": "Takamine GD20"}'))
     assert out["product"]["price_brl"] == 2199.0
-    assert json.loads(call_tool("get_store_hours", {"now": "2026-10-31T12:00"}))["is_open"] is True
+    assert "is_open" in json.loads(call_tool("get_store_hours", {}))
 
 
 def test_call_tool_errors_do_not_raise():
     assert "unknown tool" in json.loads(call_tool("rm_rf", {}))["error"]
     assert "invalid JSON" in json.loads(call_tool("get_product", "{bad"))["error"]
-    assert "bad arguments" in json.loads(call_tool("get_product", {"bogus": 1}))["error"]
+
+
+# Only arguments declared in a tool's schema reach Python; extras are dropped and
+# reported in ``ignored_arguments`` (visible in --trace and eval reports).
+def test_model_cannot_set_the_clock_of_store_hours(monkeypatch):
+    monkeypatch.setenv("EMPORIO_NOW", "2026-03-25T10:00")  # Wednesday, open
+    out = json.loads(call_tool("get_store_hours", {"now": "2026-03-29T10:00"}))  # a Sunday
+    assert out["is_open"] is True and out["weekday"] == "quarta-feira"
+    assert out["ignored_arguments"] == ["now"]
+
+
+def test_model_cannot_set_today_of_an_order(monkeypatch):
+    monkeypatch.setenv("EMPORIO_NOW", "2026-03-25T10:00")
+    args = {"order_id": 7, "email_or_phone": "leticia.rocha@jmail.com", "today": "2026-02-18"}
+    out = json.loads(call_tool("get_order_status", args))
+    assert out["order"]["return_windows"]["arrependimento"]["within_deadline"] is False
+    assert out["ignored_arguments"] == ["today"]
+
+
+@pytest.mark.parametrize("name, args, extra", [
+    ("get_product", {"name": "Takamine GD20", "conn": "x"}, "conn"),
+    ("search_products", {"query": "violão", "limit": 500}, "limit"),
+    ("get_product", {"name": "Takamine GD20", "bogus": 1}, "bogus"),
+])
+def test_arguments_outside_the_schema_are_ignored(name, args, extra):
+    out = json.loads(call_tool(name, args))
+    assert "error" not in out and out["ignored_arguments"] == [extra]
+
+
+def test_declared_arguments_carry_no_ignored_field():
+    assert "ignored_arguments" not in json.loads(call_tool("get_product", {"name": "Takamine GD20"}))
 
 
 def test_contact_query_carries_the_official_number_note():

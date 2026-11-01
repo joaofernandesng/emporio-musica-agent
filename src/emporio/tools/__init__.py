@@ -145,12 +145,21 @@ SCHEMAS: list[dict] = [
 ]
 
 
+ALLOWED_ARGUMENTS: dict[str, frozenset[str]] = {
+    s["function"]["name"]: frozenset(s["function"]["parameters"]["properties"]) for s in SCHEMAS
+}
+
+
 def call_tool(name: str, arguments: dict[str, Any] | str | None = None) -> str:
     """Execute a tool by name and return its JSON string result.
 
     ``arguments`` may be the dict or the raw JSON string produced by the model.
-    Unknown tools and bad arguments come back as ``{"error": ...}`` so the
-    model can recover instead of the program crashing.
+    Only the arguments declared in the tool's schema are passed on: anything else
+    (``now``, ``today``, ``conn``, ``limit``...) is dropped and listed in
+    ``ignored_arguments``, so the model can never reach internal parameters such
+    as the clock. Unknown tools, invalid JSON and wrong argument types come back
+    as ``{"error": ...}``; any other exception is turned into an error result by
+    the agent loop.
     """
     if isinstance(arguments, str):
         try:
@@ -160,7 +169,14 @@ def call_tool(name: str, arguments: dict[str, Any] | str | None = None) -> str:
     func = FUNCTIONS.get(name)
     if func is None:
         return json.dumps({"error": f"unknown tool '{name}'"})
+    if not isinstance(arguments, dict):
+        arguments = {}
+    allowed = ALLOWED_ARGUMENTS[name]
+    ignored = sorted(k for k in arguments if k not in allowed)
     try:
-        return json.dumps(func(**(arguments or {})), ensure_ascii=False)
+        result = func(**{k: v for k, v in arguments.items() if k in allowed})
     except TypeError as exc:
         return json.dumps({"error": f"bad arguments for {name}: {exc}"})
+    if ignored:
+        result = {**result, "ignored_arguments": ignored}
+    return json.dumps(result, ensure_ascii=False)
