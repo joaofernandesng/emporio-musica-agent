@@ -142,7 +142,7 @@ def search_policies(query: str, max_results: int = 3) -> dict[str, Any]:
     notes = []
     if any(m in r["text"] for r in results for m in CONTACT_MARKERS):
         notes.append(OFFICIAL_CONTACT_NOTE)
-    if any(r["section"] in ("4.2", "8.1") for r in results):
+    if any(r["section"].split(".")[0] in ("4", "8") for r in results):
         notes.append(DEFECT_NOTE)
     if notes:
         out["notes"] = notes

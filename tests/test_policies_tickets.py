@@ -115,3 +115,22 @@ def test_defect_query_carries_the_ticket_note():
 def test_defect_note_says_warranty_runs_in_parallel():
     note = " ".join(search_policies("meu violão veio com defeito, tem garantia?")["notes"])
     assert "em paralelo" in note and "RECEBIMENTO" in note
+
+
+@pytest.mark.parametrize("query", [
+    "trocar por preferência de cor",
+    "garantia do fabricante",
+    "direito de arrependimento",
+    "comprei na loja física e me arrependi, posso devolver?",
+    "itens que não podem ser trocados",
+])
+def test_defect_note_comes_with_any_exchange_or_warranty_section(query):
+    out = search_policies(query)
+    sections = [r["section"] for r in out["results"]]
+    assert any(s.split(".")[0] in ("4", "8") for s in sections), sections
+    assert any("em paralelo" in n for n in out.get("notes", [])), (query, sections)
+
+
+def test_no_defect_note_for_unrelated_sections():
+    out = search_policies("vocês parcelam em quantas vezes?")
+    assert not any("em paralelo" in n for n in out.get("notes", []))
