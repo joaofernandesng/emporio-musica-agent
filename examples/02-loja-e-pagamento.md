@@ -3,8 +3,8 @@
 - **Scenario:** Address and hours from the policies, a real-time open/closed check, PIX discount rules on a promotional item and a credit-card installment.
 - **Simulated date/time (store clock):** 2026-03-25T10:00 (America/Campo_Grande)
 - **Model:** gpt-5.4-mini
-- **Recorded:** 2026-10-31 21:54 (real time of the run)
-- **Usage:** 28034 prompt + 450 completion tokens, estimated cost US$ 0.0231
+- **Recorded:** 2026-10-31 22:27 (real time of the run)
+- **Usage:** 27929 prompt + 406 completion tokens, estimated cost US$ 0.0228
 
 Real run of the agent: the attendant's text below is exactly what the model returned. The collapsible blocks list the tools it called (customer data in them is fictional).
 
@@ -13,21 +13,21 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> Claro! A Empório da Música fica na **Rua 14 de Maio, 3200 — Centro, Campo Grande - MS, 79202-333**.
+> Claro! A loja fica na **Rua 14 de Maio, 3200 — Centro, Campo Grande/MS, CEP 79202-333**.
 >
-> Horário de funcionamento:
+> O horário de funcionamento é:
 > - **Segunda a sexta:** 09:00 às 18:00
 > - **Sábado:** 09:00 às 13:00
 > - **Domingo e feriados:** fechado
 >
-> Se quiser, também te passo o telefone e o WhatsApp da loja. Posso ajudar em mais alguma coisa?
+> Hoje a loja está **aberta**. Posso te ajudar em mais alguma coisa?
 
 <details><summary>Tools called (2)</summary>
 
+- `search_policies({"query": "endereço da loja e horário de funcionamento"})`  
+  → sections returned: 2 Horário de Funcionamento, 1.2 Dados da Empresa, 7.1 Diretrizes de Atendimento (+1 note(s))
 - `get_store_hours({})`  
   → is_open=True, now=2026-03-25T10:00-04:00
-- `search_policies({"query": "endereço e horário de funcionamento da loja"})`  
-  → sections returned: 2 Horário de Funcionamento, 1.2 Dados da Empresa, 7.1 Diretrizes de Atendimento (+1 note(s))
 
 </details>
 
@@ -35,9 +35,9 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> Sim, estamos abertos agora e fechamos às **18:00**.  
+> Sim, estamos abertos agora. Atendemos até **18:00** hoje.
 >
-> Se quiser, posso te passar também o endereço ou te ajudar com alguma dúvida de instrumento.
+> Posso te ajudar em mais alguma coisa?
 
 <details><summary>Tools called (0)</summary>
 
@@ -49,14 +49,14 @@ No tool was needed.
 
 **Atendente:**
 
-> Nesse Crafter HT-100, **não acumula os 5% no PIX** porque ele já está com promoção ativa.
+> Nesse **Crafter HT-100**, não acumula os 5% no PIX porque ele já está com promoção ativa.
 >
-> - **Preço original:** R$ 2.399,00  
-> - **Desconto da promoção:** 18%  
-> - **Preço final promocional:** R$ 1.967,18  
+> Fica assim:
+> - **Preço original:** R$ 2.399,00
+> - **Desconto da promoção:** 18% = **R$ 431,82**
+> - **Preço final no PIX:** **R$ 1.967,18**
 >
-> No PIX, o total fica **R$ 1.967,18** mesmo, sem desconto extra.  
-> Se quiser, posso te passar as formas de pagamento desse violão também.
+> Se quiser, posso conferir também o parcelamento dele.
 
 <details><summary>Tools called (2)</summary>
 
@@ -71,10 +71,9 @@ No tool was needed.
 
 **Atendente:**
 
-> Em **10x no cartão**, fica **10 parcelas de R$ 196,72**.  
-> As duas últimas vão em **R$ 196,71** para fechar certinho.
+> Em **10x no cartão**, fica em **10 parcelas de R$ 196,72**.
 >
-> Se quiser, eu também posso te dizer quanto sai em outras condições de pagamento.
+> Se quiser, posso te passar também o valor total no cartão ou conferir outra quantidade de parcelas.
 
 <details><summary>Tools called (1)</summary>
 

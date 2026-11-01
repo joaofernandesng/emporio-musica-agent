@@ -3,8 +3,8 @@
 - **Scenario:** Combines live order data (return windows computed from the order) with the store policies, then hands a defect claim to a human through a ticket.
 - **Simulated date/time (store clock):** 2026-03-25T10:00 (America/Campo_Grande)
 - **Model:** gpt-5.4-mini
-- **Recorded:** 2026-10-31 21:35 (real time of the run)
-- **Usage:** 25365 prompt + 627 completion tokens, estimated cost US$ 0.0218
+- **Recorded:** 2026-10-31 22:27 (real time of the run)
+- **Usage:** 26397 prompt + 640 completion tokens, estimated cost US$ 0.0227
 
 Real run of the agent: the attendant's text below is exactly what the model returned. The collapsible blocks list the tools it called (customer data in them is fictional).
 
@@ -13,15 +13,14 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> Pode sim, **se a compra foi online**: você tem **7 dias corridos após o recebimento** para pedir a devolução, sem precisar justificar. O produto precisa estar **na embalagem original**, sem sinais de uso, com acessórios e manuais.
+> Se a compra foi **online**, pode sim: pela nossa política de trocas, o arrependimento vale em até **7 dias corridos após o recebimento**. O produto precisa voltar sem sinais de uso, na embalagem original e com tudo que veio junto.
 >
-> Se a compra foi **na loja física**, o direito de arrependimento não se aplica.  
-> Se quiser, me fala se foi online ou presencial que eu te explico o caminho certinho.
+> Se foi **na loja física**, aí o arrependimento não se aplica; nesse caso, a gente vê as opções de troca por preferência ou por defeito. Se quiser, me diz se a compra foi online ou presencial que eu te oriento certinho.
 
 <details><summary>Tools called (1)</summary>
 
-- `search_policies({"query": "troca, devolução e arrependimento de compra online e compra na loja física; prazo de arrependimento; como funciona a devolução"})`  
-  → sections returned: 4.1 Direito de Arrependimento (Compras Online), 4 Política de Trocas e Devoluções, 4.2 Trocas por Defeito (+1 note(s))
+- `search_policies({"query": "arrependimento de compra devolução troca direito de arrependimento compra online e loja física prazo e regras"})`  
+  → sections returned: 4.1 Direito de Arrependimento (Compras Online), 4.2 Trocas por Defeito, 4 Política de Trocas e Devoluções (+1 note(s))
 
 </details>
 
@@ -29,12 +28,16 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> Perfeito — sendo **compra online**, você pode pedir a devolução em até **7 dias corridos após o recebimento**.  
-> O produto precisa voltar **sem uso**, na **embalagem original** e com **acessórios e manuais**.
+> Perfeito. Sendo **compra online**, você pode pedir a devolução em até **7 dias corridos após o recebimento**.
 >
-> O **frete de devolução é por conta da loja** nesse caso, e o reembolso sai na **mesma forma de pagamento** em até **10 dias úteis**.
+> Pela nossa política, o item precisa estar:
+> - na embalagem original
+> - sem sinais de uso
+> - com acessórios e manuais
 >
-> Se quiser, posso te orientar nos próximos passos.
+> O reembolso volta na mesma forma de pagamento, e o frete de devolução fica por nossa conta nesse caso.
+>
+> Se quiser, eu também posso te orientar no próximo passo para abrir a solicitação.
 
 <details><summary>Tools called (0)</summary>
 
@@ -46,11 +49,11 @@ No tool was needed.
 
 **Atendente:**
 
-> Conferi aqui, Letícia: o pedido 7 foi **entregue**.  
-> Para **arrependimento**, o prazo já passou: o limite era **24/02/2026**.
+> Conferi aqui: o pedido 7 está **entregue**.
 >
-> Ainda vale a **garantia legal até 18/05/2026**.  
-> Se o motivo for **defeito**, posso te ajudar com isso ou abrir um atendimento humano pra analisar. Quer que eu siga por esse caminho?
+> Como o prazo de arrependimento já passou, **não dá para abrir devolução por esse motivo**. Pela nossa política, esse prazo vai até **24/02/2026**.
+>
+> Ainda vale a **garantia legal até 18/05/2026**. Se o motivo for defeito, eu posso te ajudar com isso também. Se quiser, eu abro um atendimento pra analisar o caso — é só me dizer qual é o problema.
 
 <details><summary>Tools called (1)</summary>
 
@@ -63,18 +66,18 @@ No tool was needed.
 
 **Atendente:**
 
-> Entendi, Letícia. Pelo seu pedido, a **troca por defeito** já passou do prazo, mas a **garantia legal ainda vale até 18/05/2026**.
+> Poxa, sinto muito por isso. Pelo que conferi, o pedido 7 já passou do prazo de **troca por defeito** e a **garantia legal segue válida até 18/05/2026**.
 >
-> Já abri um atendimento pra equipe analisar o defeito no tampo: **T-20260325-19B341**.  
-> Eles retornam em até **24 horas úteis** no seu e-mail.
+> Já abri um atendimento para análise do caso: **T-20260325-BC9D0A**.  
+> O retorno deve chegar em **até 24 horas úteis** no seu e-mail.
 >
-> Se quiser, posso te orientar sobre o que separar de informações/fotos pra facilitar a análise.
+> Se quiser, posso te orientar também sobre o que separar de fotos ou informações do defeito pra agilizar.
 
 <details><summary>Tools called (2)</summary>
 
-- `search_policies({"query": "troca por defeito, garantia legal, prazo de 30 dias da compra e 90 dias do recebimento; como proceder com defeito no produto"})`  
-  → sections returned: 4.2 Trocas por Defeito, 8.1 Garantia Legal, 4.1 Direito de Arrependimento (Compras Online) (+1 note(s))
-- `create_ticket({"tipo": "garantia_defeito", "resumo": "Cliente relatou defeito no tampo no pedido 7 (Shelby SU-21S Soprano Sunburst). Pedido verificado; garantia legal vigente até 18/05/2026 e prazo de troca por defeito já expirado em 05/03/2026. Solicita análise de defeito.", "contato": "leticia.rocha@jmail.com"})`  
-  → created=True, ticket_id=T-20260325-19B341
+- `search_policies({"query": "troca por defeito garantia legal defeito no produto prazo 30 dias compra online e 90 dias recebimento como proceder"})`  
+  → sections returned: 4.2 Trocas por Defeito, 4.1 Direito de Arrependimento (Compras Online), 8.1 Garantia Legal (+1 note(s))
+- `create_ticket({"tipo": "garantia_defeito", "resumo": "Pedido 7, produto Shelby SU-21S Soprano Sunburst com defeito no tampo. Cliente informou e-mail leticia.rocha@jmail.com. Pedido entregue; prazo de troca por defeito já expirou, mas garantia legal ainda está dentro do prazo.", "contato": "leticia.rocha@jmail.com"})`  
+  → created=True, ticket_id=T-20260325-BC9D0A
 
 </details>

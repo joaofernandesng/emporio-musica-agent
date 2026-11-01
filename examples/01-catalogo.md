@@ -3,8 +3,8 @@
 - **Scenario:** Product search with a price ceiling, a follow-up filter and an exact price lookup.
 - **Simulated date/time (store clock):** 2026-03-25T10:00 (America/Campo_Grande)
 - **Model:** gpt-5.4-mini
-- **Recorded:** 2026-10-31 21:34 (real time of the run)
-- **Usage:** 21948 prompt + 400 completion tokens, estimated cost US$ 0.0183
+- **Recorded:** 2026-10-31 22:27 (real time of the run)
+- **Usage:** 22910 prompt + 413 completion tokens, estimated cost US$ 0.0190
 
 Real run of the agent: the attendant's text below is exactly what the model returned. The collapsible blocks list the tools it called (customer data in them is fictional).
 
@@ -13,14 +13,14 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> Temos 12 violões até R$ 1.000 no catálogo, e selecionei os 4 mais em conta pra você:
+> Claro! Conferi aqui e encontrei **12 violões até R$ 1.000**. Separei as **4 opções mais em conta**:
 >
-> - Tagima Memphis AC-39 Nylon Natural — **R$ 429,90**
-> - Rozini RC-104 Nylon Estudante — **R$ 459,90**
-> - Shelby SN-100 Folk Aço Preto — **R$ 549,00**
-> - Giannini GF-1R Aço Folk Sunburst — **R$ 579,90**
+> - **Tagima Memphis AC-39 Nylon Natural** — **R$ 429,90**
+> - **Rozini RC-104 Nylon Estudante** — **R$ 459,90**
+> - **Shelby SN-100 Folk Aço Preto** — **R$ 549,00**
+> - **Giannini GF-1R Aço Folk Sunburst** — **R$ 579,90**
 >
-> Se quiser, eu também posso te passar os modelos **de nylon**, **de aço** ou os **mais indicados pra iniciante**.
+> Se quiser, eu também posso te mandar a lista completa ou filtrar por **nylon, aço ou elétrico**.
 
 <details><summary>Tools called (1)</summary>
 
@@ -33,15 +33,15 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> Claro — temos **5 violões de nylon** até R$ 1.000:
+> Claro! Esses são os **5 violões de nylon até R$ 1.000** que encontrei:
 >
-> - Tagima Memphis AC-39 Nylon Natural — **R$ 429,90**
-> - Rozini RC-104 Nylon Estudante — **R$ 459,90**
-> - Yamaha C40 Nylon Natural — **R$ 599,90**
-> - Giannini GN-15 Nylon Cedr Natural — **R$ 689,00**
-> - Yamaha C70 Nylon Natural — **R$ 849,00**
+> - **Tagima Memphis AC-39 Nylon Natural** — **R$ 429,90**
+> - **Rozini RC-104 Nylon Estudante** — **R$ 459,90**
+> - **Yamaha C40 Nylon Natural** — **R$ 599,90**
+> - **Giannini GN-15 Nylon Cedr Natural** — **R$ 689,00**
+> - **Yamaha C70 Nylon Natural** — **R$ 849,00**
 >
-> Se quiser, eu posso te separar agora os **mais em conta**, os **melhores para iniciante** ou te mandar os detalhes de algum deles.
+> Se quiser, eu posso te ajudar a comparar por **tamanho, acabamento ou faixa de preço**.
 
 <details><summary>Tools called (1)</summary>
 
@@ -54,9 +54,9 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> O **Takamine GD20 Dreadnought Natural** está por **R$ 2.199,00**.
+> O **Takamine GD20 Dreadnought Natural** custa **R$ 2.199,00** e está **disponível**.  
 >
-> Se quiser, eu também posso te passar as especificações ou te mostrar opções parecidas mais baratas.
+> Se quiser, posso te passar as especificações dele também.
 
 <details><summary>Tools called (1)</summary>
 
