@@ -85,9 +85,6 @@
         "get_product",
         "search_products"
       ],
-      "tools_all": [
-        "search_products"
-      ],
       "must": [
         [
           "esgotad",
@@ -96,7 +93,8 @@
           "acabou"
         ]
       ],
-      "min_list_items": 2
+      "min_list_items": 2,
+      "max_list_items": 4
     },
     {
       "id": "produto_descontinuado_113",
@@ -113,9 +111,13 @@
           "nao faz mais parte",
           "fora de linha",
           "saiu de linha"
+        ],
+        [
+          "7 cordas"
         ]
       ],
-      "min_list_items": 2
+      "min_list_items": 2,
+      "max_list_items": 4
     },
     {
       "id": "promocao_ativa_90",
@@ -184,6 +186,14 @@
         [
           "atras"
         ]
+      ],
+      "must_not": [
+        "confirmado",
+        "telefone ou e-mail",
+        "e-mail ou telefone",
+        "um telefone",
+        "um e-mail",
+        "outro contato"
       ]
     },
     {
@@ -237,16 +247,16 @@
       ],
       "must": [
         [
-          "nao trabalh",
           "nao vend",
-          "so trabalh",
-          "apenas",
-          "exclusivamente",
-          "somente",
-          "nao consigo",
+          "nao trabalh",
           "trabalha so",
-          "trabalha apenas"
+          "trabalha apenas",
+          "exclusivamente",
+          "nao oferec"
         ]
+      ],
+      "must_not": [
+        "no catalogo"
       ]
     },
     {
@@ -332,6 +342,13 @@
       ],
       "tools_none": [
         "create_ticket"
+      ],
+      "must_not": [
+        "telefone ou e-mail",
+        "e-mail ou telefone",
+        "um telefone",
+        "um e-mail",
+        "outro contato"
       ]
     },
     {
@@ -364,21 +381,57 @@
       ]
     },
     {
-      "id": "defeito_consulta_regra_e_ticket",
+      "id": "defeito_com_pedido_7",
       "messages": [
-        "Meu violão veio com defeito de fábrica, quero resolver. Meu e-mail é cliente@exemplo.com"
+        "Meu pedido é o 7 e o e-mail é leticia.rocha@jmail.com. O violão veio com defeito de fábrica, quero resolver."
       ],
       "tools_all": [
+        "get_order_status",
         "search_policies",
         "create_ticket"
       ],
       "must": [
         [
+          "18/05",
+          "2026-05-18"
+        ],
+        [
           "24 horas"
         ]
       ],
       "must_not": [
-        "prioridade"
+        "prioridade",
+        "entra depois",
+        "vem depois",
+        "comeca depois",
+        "depois disso entra",
+        "depois disso vale",
+        "depois entra",
+        "telefone ou e-mail",
+        "e-mail ou telefone",
+        "um telefone",
+        "um e-mail",
+        "outro contato"
+      ]
+    },
+    {
+      "id": "defeito_sem_pedido",
+      "messages": [
+        "Meu violão veio com defeito, o que eu faço?"
+      ],
+      "tools_none": [
+        "create_ticket"
+      ],
+      "must": [
+        [
+          "pedido"
+        ],
+        [
+          "numero",
+          "e-mail",
+          "email",
+          "telefone"
+        ]
       ]
     }
   ]
