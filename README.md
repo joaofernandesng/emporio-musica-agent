@@ -31,6 +31,8 @@ source .venv/bin/activate          # Linux/macOS
 # .venv\Scripts\Activate.ps1       # Windows PowerShell
 
 pip install -e ".[dev]"            # exact versions are also pinned in requirements.txt
+# On Windows, if PowerShell refuses to run Activate.ps1:
+#   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 # 2. configuration
 cp .env.example .env               # Windows: copy .env.example .env
