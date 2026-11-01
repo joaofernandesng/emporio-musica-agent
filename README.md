@@ -5,7 +5,7 @@ A text-based support agent for a (fictional) musical instruments store in Campo 
 - Python 3.11+, command-line chat, the official `openai` SDK and a hand-written tool-calling loop (no agent framework).
 - Data lives in SQLite built from the supplied CSVs; the policies manual is converted to sectioned Markdown.
 - Anything that must be exact (prices, discounts, installments, deadlines, shipping, who may see an order) is computed by deterministic Python tools, never by the model.
-- 261 offline tests; 21 scenario evals against the real model (57 of 63 runs passed, see [Evaluation](#5-evaluation)).
+- 334 offline tests; 52 scenario evals against the real model: the 21 original ones pass 57 of 63 runs, and 31 stress scenarios from manual testing pass 23 of 31 on one run (see [Evaluation](#5-evaluation)).
 
 A short taste (full transcripts in [`examples/`](examples/)):
 
@@ -72,7 +72,7 @@ pytest
 
 ### Evals
 
-These call the real model. One full execution of the 21 scenarios costs about US$ 0.09 with `gpt-5.4-mini`. The clock is fixed at 2026-03-25 10:00 by the scenarios file unless `EMPORIO_NOW` is set.
+These call the real model. One full execution of the 52 scenarios costs about US$ 0.24 with `gpt-5.4-mini` (US$ 0.09 for the 21 original ones). The clock is fixed at 2026-03-25 10:00 by the scenarios file unless `EMPORIO_NOW` is set; three scenarios set their own clock, which wins over both.
 
 ```bash
 python -m emporio.evals                                                    # all scenarios, one execution
@@ -162,7 +162,7 @@ claude mcp add emporio -e EMPORIO_NOW=2026-03-25T10:00 -- /path/to/emporio-music
 ### Model and provider: `gpt-5.4-mini` via Chat Completions
 
 *Considered:* cheaper small models and older mini models, local models.
-*Why:* it supports tool calling, runs without extra reasoning by default (predictable cost and latency) and costs US$ 0.75 / 4.50 per 1M input/output tokens. A whole 21-scenario eval costs about US$ 0.09. My first shortlist included models that OpenAI's documentation marks as deprecated, so I dropped them. The request only sends `model`, `messages` and `tools` (no sampling or reasoning parameters), and `OPENAI_BASE_URL` lets any OpenAI-compatible provider be used. The client retries transient errors (429, 5xx, timeouts) twice with backoff and never retries authentication errors.
+*Why:* it supports tool calling, runs without extra reasoning by default (predictable cost and latency) and costs US$ 0.75 / 4.50 per 1M input/output tokens. A whole eval of the 52 scenarios costs about US$ 0.24. My first shortlist included models that OpenAI's documentation marks as deprecated, so I dropped them. The request only sends `model`, `messages` and `tools` (no sampling or reasoning parameters), and `OPENAI_BASE_URL` lets any OpenAI-compatible provider be used. The client retries transient errors (429, 5xx, timeouts) twice with backoff and never retries authentication errors.
 
 ### Policies: sectioned Markdown plus keyword search, no embeddings
 
@@ -218,7 +218,15 @@ Example 4 has a story behind it. My first recording had the agent answer that no
 
 ## 5. Evaluation
 
-There are 21 scenarios in [`evals/scenarios.json`](evals/scenarios.json), each checked automatically: expected tools, phrases that must or must not appear, list size, and global bans (no mention of the internal manual, no mention of internal tools ("ferramenta"), no invented "priority", no warranty described as starting after the exchange window). The final validation ran every scenario three times with the clock fixed: **57 of 63 runs passed (90%)**. One scenario still fails: with a verified order and a defect, the agent no longer asks for a contact again, but it offers the ticket instead of opening it (0/3; details in the evaluation page). Over all rounds the evaluation cost about US$ 1.81 in total. [`docs/evaluation.md`](docs/evaluation.md) has each round, what it revealed and what changed (including problems found by reading the replies that the automatic checks missed), and the remaining failures with their causes.
+There are 52 scenarios in [`evals/scenarios.json`](evals/scenarios.json), each checked automatically: expected tools, phrases that must or must not appear, list size, and global bans (no mention of the internal manual, no mention of internal tools ("ferramenta"), no invented "priority", no warranty described as starting after the exchange window). The final validation ran the 21 original scenarios three times with the clock fixed: **57 of 63 runs passed (90%)**. One of them still fails: with a verified order and a defect, the agent no longer asks for a contact again, but it offers the ticket instead of opening it (0/3; details in the evaluation page).
+
+### Stress scenarios and persona
+
+The other 31 scenarios come from my own manual tests, done as a customer trying to make the agent slip: payment math, shipping, opening hours on a Saturday and on Good Friday (each scenario can fix its own clock), catalog facts, other customers' orders and data, store policies and prompt attacks. Each check has an offline test with a correct reply that must pass and a wrong one that must fail. One run on the frozen agent passed 23 of 31. No run leaked another customer's data. The failures were policy errors (a split payment wrongly refused after the model halved the price itself, a 30% "manager" discount applied, a "venda final" item said to be exchangeable, an expired warranty called valid), invented answers (a guitar setup service, 88-key keyboards the catalog does not have) and two wording slips. They are listed as limitations below.
+
+I then tried naming the assistant Lira and adding two prompt rules (relax one filter at a time on empty searches, offer only options a search has confirmed), with a rule set before the run: keep the change only if the original scenarios stay at 54/63 or above and no new data, privacy, promise or policy error appears. Over all 54 scenarios × 3, the original ones held at 57/63, but three new errors appeared (a ticket handled "com prioridade", "no equivalent" for a discontinued guitar that has alternatives, a coming-soon ukulele reported as missing). The change was reverted with `git revert`, so the agent is still the frozen version.
+
+Over all rounds the evaluation cost about US$ 2.75 in total. [`docs/evaluation.md`](docs/evaluation.md) has each round, what it revealed and what changed (including problems found by reading the replies that the automatic checks missed), the per-scenario stress results and the remaining failures with their causes.
 
 ## 6. Assumptions
 
@@ -252,6 +260,7 @@ The brief leaves some things open, so I documented each interpretation. The evid
 ### Known limitations
 
 - Defect with a verified order: the agent explains the deadlines and no longer asks for the contact again, but it offers the ticket and waits for a yes instead of opening it (the defect-with-order scenario fails 3 of 3). Details in [`docs/evaluation.md`](docs/evaluation.md).
+- Stress scenarios that fail on the frozen agent: a split payment is refused after the model halves the price itself; a discount "authorised" by a self-declared manager can be applied; a "venda final" clearance item is said to be exchangeable; an expired legal warranty was once called valid; the agent claims a guitar setup service the policies do not mention and offers 88-key keyboards the catalog does not have. Details in [`docs/evaluation.md`](docs/evaluation.md#stress-scenarios).
 - Duplicate tickets after an API failure: if the model API fails after `create_ticket` ran in the same turn, the turn is rolled back but the ticket stays in the queue. The customer repeats the message and a second ticket can be opened. Future fix: idempotent tickets (a key per conversation and claim).
 - Alternatives do not distinguish acoustic from electro-acoustic guitars.
 - Order data is shown as stored (statuses months old, no unit prices), and the receipt date is approximated (S16).
@@ -302,7 +311,7 @@ src/emporio/
   evals/             scenario runner (python -m emporio.evals)
   demo.py            conversation recorder (python -m emporio.demo)
   mcp_server.py      the same tools over MCP (python -m emporio.mcp_server)
-evals/scenarios.json 21 eval scenarios
+evals/scenarios.json 52 eval scenarios (21 original, 31 stress)
 examples/            5 recorded conversations and their scripts
 docs/                data_quality.md, tools.md, agent.md, evaluation.md, raw_data.md
 scripts/             quality_checks.py (evidence for the data report), verify_policies.py
