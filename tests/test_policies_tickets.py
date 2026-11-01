@@ -107,9 +107,15 @@ def test_contact_query_carries_the_official_number_note():
     assert any("3341-4444" in n for n in out["notes"])
 
 
-def test_defect_query_carries_the_ticket_note():
-    out = search_policies("meu violão veio com defeito, tem garantia?")
-    assert any("create_ticket" in n for n in out.get("notes", []))
+@pytest.mark.parametrize("query", [
+    "me arrependi, posso devolver?",
+    "meu violão veio com defeito, tem garantia?",
+    "trocar por preferência de cor",
+])
+def test_policy_notes_never_instruct_opening_a_ticket(query):
+    # Whether to open a ticket is decided by the prompt (rule 8), not by a tool note.
+    notes = " ".join(search_policies(query).get("notes", [])).lower()
+    assert "ticket" not in notes and "create_ticket" not in notes and "abra" not in notes
 
 
 def test_defect_note_says_warranty_runs_in_parallel():

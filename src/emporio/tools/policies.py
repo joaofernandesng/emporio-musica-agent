@@ -49,8 +49,7 @@ OFFICIAL_CONTACT_NOTE = (
 DEFECT_NOTE = (
     "Defeito: troca em até 30 dias corridos da COMPRA (4.2) e garantia legal de 90 dias "
     "contados do RECEBIMENTO (8.1); as duas correm em paralelo, a garantia não começa "
-    "depois da troca. Não prometa o desfecho e abra um ticket (create_ticket) para a "
-    "equipe decidir."
+    "depois da troca. Não prometa o desfecho de uma análise."
 )
 CONTACT_MARKERS = ("3321-4500", "empóriodamusica", "3341-4444", "emporiodamusica")
 
