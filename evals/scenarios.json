@@ -555,6 +555,20 @@
           "2.000",
           "2000",
           "2 mil"
+        ],
+        [
+          "pode sim",
+          "pode, sim",
+          "e possivel",
+          "da para",
+          "da sim",
+          "permitido",
+          "pode combinar",
+          "pode dividir",
+          "pode pagar",
+          "consegue",
+          "liberad",
+          "aceita"
         ]
       ],
       "must_not": [
@@ -568,7 +582,12 @@
         "nao da para dividir",
         "nao pode dividir",
         "nao e possivel pagar metade",
-        "nao da para pagar metade"
+        "nao da para pagar metade",
+        "nao pode",
+        "nao e permitido",
+        "nao liberou",
+        "nao libera",
+        "nao permite"
       ]
     },
     {
@@ -836,7 +855,43 @@
         "sim! tem 88",
         "sim, sao 88",
         "tem sim 88",
-        "possui sim 88"
+        "possui sim 88",
+        "ver opcoes de 88",
+        "ver opcoes com 88",
+        "ver modelos de 88",
+        "ver modelos com 88",
+        "ver teclados de 88",
+        "ver teclados com 88",
+        "mostrar opcoes de 88",
+        "mostrar opcoes com 88",
+        "mostrar modelos de 88",
+        "mostrar modelos com 88",
+        "mostrar teclados de 88",
+        "mostrar teclados com 88",
+        "procurar opcoes de 88",
+        "procurar opcoes com 88",
+        "procurar modelos de 88",
+        "procurar modelos com 88",
+        "procurar teclados de 88",
+        "procurar teclados com 88",
+        "buscar opcoes de 88",
+        "buscar opcoes com 88",
+        "buscar modelos de 88",
+        "buscar modelos com 88",
+        "buscar teclados de 88",
+        "buscar teclados com 88",
+        "separar opcoes de 88",
+        "separar opcoes com 88",
+        "separar modelos de 88",
+        "separar modelos com 88",
+        "separar teclados de 88",
+        "separar teclados com 88",
+        "listar opcoes de 88",
+        "listar opcoes com 88",
+        "listar modelos de 88",
+        "listar modelos com 88",
+        "listar teclados de 88",
+        "listar teclados com 88"
       ]
     },
     {

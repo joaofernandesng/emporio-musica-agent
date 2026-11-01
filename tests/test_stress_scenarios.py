@@ -119,6 +119,18 @@ CASES = {
 }
 
 
+# Wrong replies the real model gave in the baseline run that the first version of the
+# checks let through.
+BASELINE_WRONG = {
+    "pagamento_combinado_takamine": (
+        "Sobre pagar metade no PIX e metade no cartão: **não pode**, porque combinar formas de pagamento só é"
+        " possível em compras acima de **R$ 2.000,00**."),
+    "korg_synth_teclas": (
+        "Não, ele tem **61 teclas**. Se quiser, posso te passar mais detalhes dele ou ver opções de 88 teclas"
+        " pra você."),
+}
+
+
 def _tools_for(scenario):
     return list(scenario.get("tools_all", [])) + list(scenario.get("tools_any", [])[:1])
 
@@ -140,6 +152,12 @@ def test_wrong_reply_fails(scenario_id):
     scenario = SCENARIOS[scenario_id]
     _, bad = CASES[scenario_id]
     assert check(scenario, _tools_for(scenario), [bad])
+
+
+@pytest.mark.parametrize("scenario_id", sorted(BASELINE_WRONG))
+def test_wrong_baseline_reply_fails(scenario_id):
+    scenario = SCENARIOS[scenario_id]
+    assert check(scenario, _tools_for(scenario), [BASELINE_WRONG[scenario_id]])
 
 
 def test_scenario_clock_overrides_the_default(tmp_path, monkeypatch):
