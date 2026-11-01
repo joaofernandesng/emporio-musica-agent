@@ -16,8 +16,8 @@ from emporio.agent.session import Session, new_session_id
 from emporio.tools.common import CLOCK_ENV
 
 WELCOME = (
-    "Oi! Eu sou o atendente virtual da Empório da Música. "
-    "Posso ajudar com produtos, preços, pedidos, pagamento, entrega e trocas. "
+    "Oi! Eu sou a Lira, assistente virtual da Empório da Música. Sua música começa aqui! "
+    "Posso ajudar com instrumentos, preços, pedidos, pagamento, entrega e trocas. "
     "(Digite /reset para recomeçar ou /sair para encerrar.)"
 )
 
@@ -81,14 +81,14 @@ def chat(
         session.append(result.new_messages)
         if trace:
             print_trace(result)
-        write(f"\nEmpório: {result.text}")
+        write(f"\nLira: {result.text}")
 
 
 def main(argv: list[str] | None = None) -> int:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(prog="emporio", description="Atendente virtual da Empório da Música")
+    parser = argparse.ArgumentParser(prog="emporio", description="Lira, assistente virtual da Empório da Música")
     parser.add_argument("--session", help="retoma a sessão com este id")
     parser.add_argument("--trace", action="store_true", help="mostra as ferramentas chamadas")
     parser.add_argument("--now", help=f"ISO 8601; sobrepõe {CLOCK_ENV}")

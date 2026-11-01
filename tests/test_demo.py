@@ -36,3 +36,8 @@ def test_summaries_are_short_and_safe():
     assert "error" in summarize_result("get_product", json.dumps({"error": "boom"}))
     block = render_turn("oi", "olá", [ToolEvent("get_store_hours", {}, json.dumps({"is_open": True, "now": "x"}))])
     assert "<details>" in block and "</details>" in block
+
+
+def test_agent_turns_are_labelled_lira():
+    block = render_turn("oi", "olá", [])
+    assert "**Lira:**" in block and "**Atendente:**" not in block

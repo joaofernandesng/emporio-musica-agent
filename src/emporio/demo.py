@@ -88,7 +88,7 @@ def _quote(text: str) -> str:
 
 
 def render_turn(user: str, reply: str, events: list[ToolEvent]) -> str:
-    parts = [f"**Cliente:** {user}", "", "**Atendente:**", "", _quote(reply), ""]
+    parts = [f"**Cliente:** {user}", "", "**Lira:**", "", _quote(reply), ""]
     if events:
         parts += [f"<details><summary>Tools called ({len(events)})</summary>", ""]
         for e in events:
