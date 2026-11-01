@@ -1,3 +1,5 @@
+import pytest
+
 import json
 
 from emporio.evals import check, normalize, run_all
@@ -57,3 +59,22 @@ def test_list_item_limit():
 def test_min_list_items():
     assert check({"min_list_items": 2}, [], ["Só oferece ver alternativas?"])
     assert check({"min_list_items": 2}, [], ["- a\n- b"]) == []
+
+
+@pytest.mark.parametrize("reply", [
+    "Abri o ticket com prioridade.",
+    "Depois disso, entra a garantia legal de 90 dias.",
+    "Depois disso vale a garantia legal.",
+    "A garantia legal entra depois da troca.",
+    "Passados os 30 dias a garantia vem depois.",
+])
+def test_global_bans_priority_and_sequential_warranty(reply):
+    assert check({}, [], [reply])
+
+
+@pytest.mark.parametrize("reply", [
+    "A garantia legal vale até 18/05 e corre em paralelo com a troca de 30 dias.",
+    "O retorno chega em até 24 horas úteis.",
+])
+def test_global_bans_allow_the_correct_wording(reply):
+    assert check({}, [], [reply]) == []

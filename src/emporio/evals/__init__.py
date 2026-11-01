@@ -41,7 +41,14 @@ class ScenarioResult:
 
 
 # The policies manual is internal: replies to customers must never mention it.
-GLOBAL_FORBIDDEN = (r"\bmanual\b", r"\bsecao\b", r"\bsecoes\b")
+GLOBAL_FORBIDDEN = (
+    r"\bmanual\b", r"\bsecao\b", r"\bsecoes\b",
+    # nothing the tools did not promise
+    r"\bprioridade\b",
+    # the legal warranty runs IN PARALLEL with the 30-day exchange, never "after" it
+    r"entra(m)? depois", r"garantia (legal )?(entra|vem|comeca|passa a valer) depois",
+    r"depois (disso|desse prazo|da troca|dos 30 dias),? ?(entra|vale|vem|passa|a garantia)",
+)
 LIST_ITEM = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+\S", re.MULTILINE)
 
 
@@ -70,7 +77,7 @@ def check(scenario: dict[str, Any], tools: list[str], replies: list[str]) -> lis
             failures.append(f"reply must not contain {forbidden!r}")
     for pattern in GLOBAL_FORBIDDEN:
         if re.search(pattern, text):
-            failures.append(f"reply must not mention the internal manual/section ({pattern})")
+            failures.append(f"reply contains a forbidden phrase (global rule {pattern})")
     minimum = scenario.get("min_list_items")
     if minimum is not None and count_list_items(replies) < minimum:
         failures.append(f"list has {count_list_items(replies)} items, expected at least {minimum}")
