@@ -3,8 +3,8 @@
 - **Scenario:** An expired promotion on an out-of-stock product, an open question about active promotions and an active promotion with original price, percentage and final price.
 - **Simulated date/time (store clock):** 2026-03-25T10:00 (America/Campo_Grande)
 - **Model:** gpt-5.4-mini
-- **Recorded:** 2026-10-31 21:36 (real time of the run)
-- **Usage:** 23022 prompt + 325 completion tokens, estimated cost US$ 0.0187
+- **Recorded:** 2026-10-31 21:54 (real time of the run)
+- **Usage:** 19015 prompt + 413 completion tokens, estimated cost US$ 0.0161
 
 Real run of the agent: the attendant's text below is exactly what the model returned. The collapsible blocks list the tools it called (customer data in them is fictional).
 
@@ -13,14 +13,14 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> O Giannini GF-3D está **esgotado** e, no momento, **não está com promoção ativa**.
+> Conferi aqui: o **Giannini GF-3D** está **esgotado** e **não está com promoção ativa** no momento.
 >
-> Alternativas que encontrei agora:
-> - **Shelby SGD-195E Elétrico Aço Sunburst** — **R$ 799,00**
-> - **Tagima Dallas Tuner Aço Natural** — **R$ 749,00**
-> - **Tagima Woodstock Dreadnought Natural** — **R$ 899,00**
+> Alternativas disponíveis que encontrei:
+> 1. **Shelby SGD-195E Elétrico Aço Sunburst** — **R$ 799,00**
+> 2. **Tagima Dallas Tuner Aço Natural** — **R$ 749,00**
+> 3. **Tagima Woodstock Dreadnought Natural** — **R$ 899,00**
 >
-> Se quiser, eu posso te passar mais opções parecidas.
+> Se quiser, posso te mostrar mais opções de violão nessa faixa.
 
 <details><summary>Tools called (1)</summary>
 
@@ -33,19 +33,22 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> No momento, **não encontrei nenhum violão com promoção ativa**.
+> Tem sim, e hoje encontrei **2 violões em promoção**:
 >
-> Tem **33 opções disponíveis** no catálogo, e todas as que apareceram pra mim estão com o **mesmo preço original e final**.
+> 1. **Crafter HT-100 Folk Aço Natural**  
+>    de **R$ 2.399,00** por **R$ 1.967,18** — **18% off**  
+>    desconto de **R$ 431,82**
 >
-> Se quiser, eu posso te mostrar:
-> - os **violões mais baratos**
-> - os **elétricos**
-> - ou os **de nylon**.
+> 2. **Taylor 110e Dreadnought Natural**  
+>    de **R$ 5.999,00** por **R$ 5.519,08** — **8% off**  
+>    desconto de **R$ 479,92**
+>
+> Se quiser, eu posso te trazer só os mais baratos ou os com cordas de aço/nylon.
 
 <details><summary>Tools called (1)</summary>
 
-- `search_products({"category": "Violões", "include_unavailable": false})`  
-  → 33 result(s): Tagima Memphis AC-39 Nylon Natural; Rozini RC-104 Nylon Estudante; Shelby SN-100 Folk Aço Preto; Giannini GF-1R Aço Folk Sunburst ...
+- `search_products({"category": "violões", "on_promotion": true, "include_unavailable": false})`  
+  → 2 result(s): Crafter HT-100 Folk Aço Natural; Taylor 110e Dreadnought Natural
 
 </details>
 
@@ -53,13 +56,9 @@ Real run of the agent: the attendant's text below is exactly what the model retu
 
 **Atendente:**
 
-> O **Crafter HT-100** está com promoção ativa:
+> O **Crafter HT-100 Folk Aço Natural** está por **R$ 1.967,18**, com preço original de **R$ 2.399,00** e **18% de desconto**.
 >
-> - **De R$ 2.399,00**
-> - **18% off**
-> - **Por R$ 1.967,18**
->
-> Tem **3 unidades disponíveis**. Se quiser, também posso te passar as formas de pagamento.
+> Se quiser, posso te passar mais detalhes dele ou comparar com outro violão.
 
 <details><summary>Tools called (1)</summary>
 
