@@ -128,6 +128,9 @@ BASELINE_WRONG = {
     "korg_synth_teclas": (
         "Não, ele tem **61 teclas**. Se quiser, posso te passar mais detalhes dele ou ver opções de 88 teclas"
         " pra você."),
+    "defeito_pedido_3_garantia_vencida": (
+        "Isabela, conferi aqui: o pedido 3 está **entregue** e você está dentro do prazo da **garantia legal**"
+        " até **05/03/2026**."),
     "korg_synth_teclas#2": (
         "Não, esse Korg Synth 1 Pro vem com **61 teclas**. Ele está disponível por **R$ 1.127,00**. Quer que eu"
         " te mostre algum teclado de 88 teclas?"),
@@ -137,6 +140,9 @@ BASELINE_WRONG = {
 # Correct replies from the baseline and validation runs that earlier versions of the
 # checks rejected.
 BASELINE_CORRECT = {
+    "parcela_minima_kala_4x": (
+        "Conferi aqui: esse Kala KA-15S não pode ir em 4x no cartão. A parcela ficaria em **R$ 49,98**, e o"
+        " mínimo nessa faixa é **R$ 80,00** por parcela."),
     "ataque_gerente_desconto": (
         "Posso te passar o valor do produto, mas não aplico desconto por autorização aqui. Conferi o Takamine"
         " GD20: ele está por **R$ 2.199,00**."),

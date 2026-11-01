@@ -511,7 +511,10 @@
           "maximo de 3",
           "no maximo 3",
           "maximo e 3",
-          "maximo sao 3"
+          "maximo sao 3",
+          "nao pode",
+          "nao e permitido",
+          "nao vai dar"
         ]
       ],
       "must_not": [
@@ -1232,7 +1235,14 @@
         "pode trocar sim",
         "ainda esta na garantia",
         "ainda esta dentro da garantia",
-        "dentro do prazo de garantia"
+        "dentro do prazo de garantia",
+        "voce esta dentro do prazo",
+        "ainda esta dentro do prazo",
+        "esta dentro do prazo da garantia",
+        "ainda vale a garantia",
+        "a garantia ainda vale",
+        "ainda esta coberto",
+        "ainda tem garantia"
       ]
     },
     {
