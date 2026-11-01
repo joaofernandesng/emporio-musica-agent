@@ -271,6 +271,26 @@ def search_products(
     }
 
 
+# Words a customer puts around a product name: articles and generic nouns.
+NAME_FILLERS = {"o", "a", "os", "as", "um", "uma", "do", "da", "de", "modelo", "instrumento"}
+# Everyday names of the categories, folded like ``tokens`` does.
+CATEGORY_SYNONYMS = {
+    1: {"guitarra"}, 2: {"baixo", "contrabaixo"}, 3: {"bateria", "percussao"},
+    4: {"teclado", "piano", "sintetizador"}, 5: {"violao"}, 9: {"ukulele", "uke"},
+}
+
+
+def _category_words(db: sqlite3.Connection) -> set[str]:
+    words = {w for s in CATEGORY_SYNONYMS.values() for w in s}
+    for (name,) in db.execute("SELECT name FROM categories"):
+        words |= set(tokens(name))
+    return words - NAME_FILLERS
+
+
+def _category_words_of(row: sqlite3.Row) -> set[str]:
+    return set(tokens(row["category_name"])) | CATEGORY_SYNONYMS.get(row["category_id"], set())
+
+
 def _spec_text(row: sqlite3.Row) -> str:
     return " ".join(str(v) for v in json.loads(row["specs_json"]).values())
 
@@ -310,6 +330,16 @@ def get_product(
         rows = db.execute(_BASE_SQL + " ORDER BY p.product_id").fetchall()
         wanted = set(tokens(name))
         hits = [r for r in rows if wanted <= set(tokens(r["name"]))]
+        if not hits:  # "o violão Takamine GD20": drop articles and category words
+            category_words = wanted & _category_words(db)
+            core = wanted - category_words - NAME_FILLERS
+            if core and core != wanted:
+                hits = [r for r in rows if core <= set(tokens(r["name"]))]
+                in_category = [r for r in hits if category_words <= _category_words_of(r)]
+                if hits and not in_category:  # "guitarra Takamine": no such guitar
+                    return {"status": "not_found",
+                            "candidates": [summarize(db, r) for r in hits[:3]]}
+                hits, wanted = in_category, core
         if not hits:  # "gd 20" vs "gd20": compare without separators
             compact = _compact(name)
             hits = [r for r in rows if compact and compact in _compact(r["name"])]

@@ -1,3 +1,5 @@
+import pytest
+
 from emporio.tools.products import get_product, search_products
 
 
@@ -162,3 +164,31 @@ def test_small_search_is_not_truncated(conn):
     out = search_products(query="Takamine", conn=conn)
     assert out["truncated"] is False and out["returned_count"] == out["total_count"] == len(out["results"])
     assert not any("incompleta" in n.lower() for n in out["notes"])
+
+
+# ---- names with category words and articles ("o violão Takamine GD20") -----------
+@pytest.mark.parametrize("text, product_id", [
+    ("violão Takamine GD20", 95),
+    ("o violão Takamine GD20", 95),
+    ("o ukulele Kala KA-T", 124),
+    ("ukulele kala ka-t", 124),
+    ("Bateria Yamaha Kit 1", 139),
+])
+def test_name_lookup_ignores_category_words_and_articles(conn, text, product_id):
+    result = get_product(name=text, conn=conn)
+    assert result["status"] == "found", result
+    assert result["product"]["product_id"] == product_id
+
+
+@pytest.mark.parametrize("text", ["violão Takamine", "o violão Yamaha"])
+def test_category_word_does_not_hide_ambiguity(conn, text):
+    result = get_product(name=text, conn=conn)
+    assert result["status"] == "ambiguous" and len(result["candidates"]) > 1
+    assert {c["category"] for c in result["candidates"]} == {"Violões"}
+
+
+def test_wrong_category_word_is_not_a_match(conn):
+    # There is no Takamine guitar: the acoustic Takamine may be suggested, never "found".
+    result = get_product(name="guitarra Takamine GD20", conn=conn)
+    assert result["status"] == "not_found"
+    assert [c["product_id"] for c in result["candidates"]] == [95]
