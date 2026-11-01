@@ -51,6 +51,9 @@ SCHEMAS: list[dict] = [
             "string_type": {"type": "string", "enum": ["steel", "nylon"],
                             "description": "Strings of acoustic guitars/ukuleles (steel = aço)."},
             "has_electronics": {"type": "boolean", "description": "True for electro-acoustic models."},
+            "on_promotion": {"type": "boolean",
+                            "description": "True to list only products with an active promotion "
+                                           "(use it for 'what is on sale?')."},
             "include_unavailable": {"type": "boolean",
                                     "description": "Also list out-of-stock, discontinued and coming-soon items."},
         },

@@ -31,6 +31,17 @@ and is computed with the single clock. Assumptions (see `data_quality.md` O10):
 `estimated_delivery` approximates the receipt date and system orders count as
 online purchases. Other statuses return `return_windows: null` plus a note.
 
+## Promotion filter and truncation
+
+`search_products(on_promotion=true)` keeps only products with an active promotion
+(`false`/omitted: no filter). Results are sorted by price and capped by `limit`
+(default 20), so the response also carries `total_count` (matches before the cap),
+`returned_count` and `truncated`. When `truncated` is true a note tells the model
+the list is incomplete and that it must not conclude that something does not exist
+(or say "all"/"none"): it should refine the search (`on_promotion`, price range,
+string type) or say how many there are. This came from a recorded conversation in
+which a truncated list led the agent to claim there were no promotions on guitars.
+
 ## Alternatives and accessories
 
 - **`alternatives`** (in `get_product` and in `search_products` results): for an

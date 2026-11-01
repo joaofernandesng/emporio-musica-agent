@@ -133,3 +133,32 @@ def test_promotion_exposes_discount_amount_in_brl(conn):
 def test_search_results_carry_discount_amount(conn):
     item = search_products(query="Crafter HT-100", conn=conn)["results"][0]
     assert item["promotion"]["discount_brl"] == 431.82
+
+
+# ---- promotion filter and truncation awareness -----------------------------------------
+
+def test_on_promotion_filter_returns_only_active_promotions_including_crafter(conn):
+    out = search_products(category="violões", on_promotion=True, conn=conn)
+    ids = [r["product_id"] for r in out["results"]]
+    assert 90 in ids  # Crafter HT-100, 18% off
+    assert out["results"] and all(r["promotion"] for r in out["results"])
+    assert out["total_count"] == len(ids) and out["truncated"] is False
+
+
+def test_on_promotion_false_or_none_means_no_filter(conn):
+    all_ = search_products(category="violões", conn=conn)["total_count"]
+    assert search_products(category="violões", on_promotion=False, conn=conn)["total_count"] == all_
+
+
+def test_truncated_search_reports_totals_and_warns_the_model(conn):
+    out = search_products(category="violões", conn=conn)
+    assert out["total_count"] == 33 and out["returned_count"] == 20 and len(out["results"]) == 20
+    assert out["truncated"] is True
+    note = " ".join(out["notes"]).lower()
+    assert "incompleta" in note and "on_promotion" in note
+
+
+def test_small_search_is_not_truncated(conn):
+    out = search_products(query="Takamine", conn=conn)
+    assert out["truncated"] is False and out["returned_count"] == out["total_count"] == len(out["results"])
+    assert not any("incompleta" in n.lower() for n in out["notes"])

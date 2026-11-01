@@ -159,6 +159,7 @@ def search_products(
     has_electronics: bool | None = None,
     include_unavailable: bool = False,
     limit: int = 20,
+    on_promotion: bool | None = None,
     *,
     conn: sqlite3.Connection | None = None,
 ) -> dict[str, Any]:
@@ -179,9 +180,13 @@ def search_products(
         has_electronics: True for electro-acoustic, False for purely acoustic.
         include_unavailable: Also list non-available products.
         limit: Maximum number of results (default 20).
+        on_promotion: True keeps only products with an active promotion
+            (False/None: no filter).
 
     Returns:
-        ``{"count", "results", "truncated", "notes"}`` with JSON-safe values.
+        ``{"count", "total_count", "returned_count", "results", "truncated",
+        "notes"}``. ``total_count`` is the number of matches before ``limit``;
+        when ``truncated`` the list is incomplete and a note says so.
     """
     notes: list[str] = []
     matched_terms = accessory_terms(query)
@@ -229,15 +234,28 @@ def search_products(
             _attach_alternatives(db, r, item)
             results.append(item)
 
+    if on_promotion:
+        results = [r for r in results if r["promotion"]]
     if min_price is not None:
         results = [r for r in results if r["current_price_brl"] >= min_price]
     if max_price is not None:
         results = [r for r in results if r["current_price_brl"] <= max_price]
     results.sort(key=lambda r: (r["current_price_brl"], r["product_id"]))
+    shown = results[:limit]
+    truncated = len(results) > limit
+    if truncated:
+        notes.append(
+            f"Lista incompleta: {len(results)} produtos correspondem, só {len(shown)} foram "
+            "devolvidos (ordenados por preço). Não conclua que algo não existe nem fale em "
+            "'todos' ou 'nenhum' com base nesta lista: refine a busca (on_promotion=true, "
+            "faixa de preço, tipo de corda) ou diga quantos há e ofereça um filtro."
+        )
     return {
         "count": len(results),
-        "results": results[:limit],
-        "truncated": len(results) > limit,
+        "total_count": len(results),
+        "returned_count": len(shown),
+        "results": shown,
+        "truncated": truncated,
         "notes": notes,
     }
 
