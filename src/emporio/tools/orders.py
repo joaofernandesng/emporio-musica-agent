@@ -51,6 +51,12 @@ def _matches(contact: str | None, customer: sqlite3.Row) -> bool:
     return len(phone) >= 10 and phone == customer["phone_digits"]
 
 
+def _normalized_contact(contact: str) -> str:
+    """The contact exactly as the customer gave it, normalised (never read from the database)."""
+    contact = contact.strip()
+    return contact.lower() if "@" in contact else _normalize_phone(contact)
+
+
 def _payment_label(method: str | None) -> str | None:
     if method is None:
         return None
@@ -116,8 +122,13 @@ def get_order_status(
         today: Reference date (injectable for tests); defaults to today in
             America/Campo_Grande.
 
+    When verified, ``verified_contact`` is the e-mail or phone the customer gave in
+    this query (normalised), so a ticket can reuse it without asking again. It is
+    never a contact from the customer record that the customer did not give.
+
     Returns:
-        ``{"verified": False, "message"}`` or ``{"verified": True, "order": {...}}``.
+        ``{"verified": False, "message"}`` or
+        ``{"verified": True, "verified_contact", "order": {...}}``.
     """
     if isinstance(today, str):
         today = date.fromisoformat(today)
@@ -156,6 +167,7 @@ def get_order_status(
         days_overdue = max((today - date.fromisoformat(estimated)).days, 0)
     return {
         "verified": True,
+        "verified_contact": _normalized_contact(email_or_phone),
         "order": {
             "order_id": order["order_id"],
             "customer_first_name": order["customer_name"].split()[0],

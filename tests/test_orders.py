@@ -132,3 +132,36 @@ def test_undelivered_order_has_no_return_windows(conn, monkeypatch):
 
 def test_unverified_order_exposes_no_windows(conn):
     assert "return_windows" not in str(get_order_status(7, "outro@x.com", conn=conn))
+
+
+# --- verified_contact: the contact the customer gave, reused for a ticket -------------
+
+def test_verified_order_returns_the_email_the_customer_gave(conn):
+    result = get_order_status(8, f"  {ANA_EMAIL.upper()} ", today="2026-10-31", conn=conn)
+    assert result["verified_contact"] == ANA_EMAIL  # normalised: trimmed + lowercase
+
+
+def test_verified_order_returns_the_phone_the_customer_gave(conn):
+    result = get_order_status(8, "+55 (67) 99654-7821", today="2026-10-31", conn=conn)
+    assert result["verified_contact"] == "67996547821"  # normalised: digits, no +55
+
+
+def test_unverified_order_returns_no_contact(conn):
+    for result in (
+        get_order_status(8, "someone@else.com", conn=conn),
+        get_order_status(8, None, conn=conn),
+        get_order_status(9999, ANA_EMAIL, conn=conn),
+    ):
+        assert "verified_contact" not in result
+        assert result == NOT_VERIFIED
+
+
+def test_verified_contact_comes_from_the_query_not_from_the_database(conn):
+    # Ana gave her e-mail: her registered phone must not appear anywhere in the result.
+    by_email = get_order_status(8, ANA_EMAIL, today="2026-10-31", conn=conn)
+    assert by_email["verified_contact"] == ANA_EMAIL
+    assert "99654" not in str(by_email) and "996547821" not in str(by_email)
+    # Ana gave her phone: her registered e-mail must not appear anywhere in the result.
+    by_phone = get_order_status(8, ANA_PHONE, today="2026-10-31", conn=conn)
+    assert by_phone["verified_contact"] == "67996547821"
+    assert "@" not in str(by_phone)
