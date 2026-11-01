@@ -110,3 +110,8 @@ def test_contact_query_carries_the_official_number_note():
 def test_defect_query_carries_the_ticket_note():
     out = search_policies("meu violão veio com defeito, tem garantia?")
     assert any("create_ticket" in n for n in out.get("notes", []))
+
+
+def test_defect_note_says_warranty_runs_in_parallel():
+    note = " ".join(search_policies("meu violão veio com defeito, tem garantia?")["notes"])
+    assert "em paralelo" in note and "RECEBIMENTO" in note
