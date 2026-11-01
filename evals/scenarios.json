@@ -762,7 +762,11 @@
       ],
       "must": [
         [
-          "fechad"
+          "fechad",
+          "nao estamos abert",
+          "nao esta abert",
+          "nao estamos funcionando",
+          "nao estamos atendendo"
         ],
         [
           "segunda"
@@ -777,12 +781,15 @@
         ]
       ],
       "must_not": [
-        "estamos abertos",
-        "esta aberta",
-        "estamos aberto",
-        "a loja esta aberta",
-        "abertos agora",
-        "aberta agora"
+        "sim, estamos",
+        "estamos sim",
+        "sim! estamos",
+        "sim, a loja",
+        "estamos abertos ate",
+        "estamos aberto ate",
+        "esta aberta ate",
+        "abertos agora ate",
+        "aberta agora ate"
       ]
     },
     {
@@ -796,7 +803,11 @@
       ],
       "must": [
         [
-          "fechad"
+          "fechad",
+          "nao estamos abert",
+          "nao esta abert",
+          "nao estamos funcionando",
+          "nao estamos atendendo"
         ],
         [
           "sexta-feira santa",
@@ -805,12 +816,15 @@
         ]
       ],
       "must_not": [
-        "estamos abertos",
-        "esta aberta",
-        "estamos aberto",
-        "a loja esta aberta",
-        "abertos agora",
-        "aberta agora"
+        "sim, estamos",
+        "estamos sim",
+        "sim! estamos",
+        "sim, a loja",
+        "estamos abertos ate",
+        "estamos aberto ate",
+        "esta aberta ate",
+        "abertos agora ate",
+        "aberta agora ate"
       ]
     },
     {

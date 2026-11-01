@@ -131,8 +131,12 @@ BASELINE_WRONG = {
 }
 
 
-# Correct replies from the baseline run that the first version of the checks rejected.
+# Correct replies from the baseline and validation runs that earlier versions of the
+# checks rejected.
 BASELINE_CORRECT = {
+    "sabado_fechado_abre_segunda": (
+        "Agora não estamos abertos, não. Aos sábados a loja funciona até 13:00, e o próximo atendimento é na"
+        " segunda-feira, 30/03, às 09:00."),
     "pedido_18_cancelado": (
         "Gustavo, conferi aqui: o pedido 18 está **cancelado**. Motivo informado: **item fora de estoque no"
         " momento do pedido**. Como ele não foi entregue, não há janela de troca/devolução."),
