@@ -221,7 +221,7 @@ I built this with Claude in two roles.
 
 - **Planning and review:** Claude Opus, in the Claude app, acted as my technical lead. It read the brief and the data with me, proposed the architecture, split the work into stages, wrote the instructions for each stage, reviewed every report, transcript and diff, and pushed back on results (for example, by reading the eval answers by hand, not only the automatic checks).
 - **Implementation:** Claude Code (Claude Sonnet 5.5) implemented each stage on my machine under explicit rules: small commits, failing tests first, no push, never read the `.env`, never edit `data/raw`. The commits carry a `Co-Authored-By` line.
-- **My part:** I set the goals and constraints (deadline, budget, the model provider account and key, what may be public), read every stage report, approved or sent work back, and made the final calls: the model, the scope, the assumptions, freezing the agent, and keeping the examples unedited. TODO(João): add, in your own words, anything you did by hand.
+- **My part:** I set the goal and the limits: deadline, budget and what could be public. I handled the hands-on setup: I created the OpenAI account and API key with a spending limit, organised the challenge files (keeping the brief out of the repository) and created the GitHub repository. I ran every stage in Claude Code, read the reports and the recorded conversations, and decided what moved forward and what went back for rework. Running an independent review with a different model before publishing was my idea, and it found defects we had been blaming on the model. Technical decisions were proposed during planning; I asked why whenever something was not clear to me, and I approved the final calls.
 
 Five real moments of the process:
 
