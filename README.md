@@ -5,7 +5,7 @@ A text-based support agent for a (fictional) musical instruments store in Campo 
 - Python 3.11+, command-line chat, the official `openai` SDK and a hand-written tool-calling loop (no agent framework).
 - Data lives in SQLite built from the supplied CSVs; the policies manual is converted to sectioned Markdown.
 - Anything that must be exact (prices, discounts, installments, deadlines, shipping, who may see an order) is computed by deterministic Python tools, never by the model.
-- 251 offline tests; 21 scenario evals against the real model (57 of 63 runs passed, see [Evaluation](#5-evaluation)).
+- 261 offline tests; 21 scenario evals against the real model (57 of 63 runs passed, see [Evaluation](#5-evaluation)).
 
 A short taste (full transcripts in [`examples/`](examples/)):
 
@@ -64,7 +64,7 @@ Inside the chat: `/reset` starts over, `/sair` quits (Ctrl+C at the prompt also 
 
 ### Tests
 
-Offline, no key needed, about 5 seconds.
+Offline, no key needed, under 10 seconds.
 
 ```bash
 pytest
@@ -100,6 +100,8 @@ flowchart LR
     TOOLS --> TK["tickets.jsonl"]
     LOOP --> SES["sessions/*.jsonl"]
     LOOP --> CLI
+    MCPC["MCP client"] -->|"stdio"| MCPS["mcp_server<br/>python -m emporio.mcp_server"]
+    MCPS -->|"call_tool"| TOOLS
 ```
 
 On each turn the user message goes to the model with the tool schemas. If the model asks for tools, the loop runs them (several at once if requested), returns the JSON results and asks again. This repeats until the model answers in plain text, or until the iteration limit produces a polite fallback. A failing tool becomes an error result the model can react to, never an exception. If the model API fails, the turn is rolled back so history stays consistent.
@@ -115,12 +117,47 @@ On each turn the user message goes to the model with the tool schemas. If the mo
 | `search_policies` | Keyword search over the sectioned policies manual; adds guidance notes (official contact, defect and warranty rule). |
 | `create_ticket` | Hands a complaint or claim to a human (promises a reply within 24 business hours). |
 
+### Using the tools from any MCP client
+
+`python -m emporio.mcp_server` serves the same eight tools over the Model Context Protocol (stdio), so a client such as Claude Desktop or Claude Code can call them directly.
+
+The rules live in the tools, not in the prompt, so another client can reuse them safely. The server builds its tool list from the same schemas the agent sends to the model and runs every call through the same `call_tool`: order verification still applies, arguments outside the schema (such as `now`) are still dropped, and the clock still comes from `EMPORIO_NOW` or the real time. `create_ticket` writes to the normal queue in `data/runtime/tickets.jsonl`. The server never calls a model, so it needs no OpenAI key, and it builds the database on first use like the rest of the project.
+
+The `mcp` package comes with the `[dev]` extra (or install only `pip install -e ".[mcp]"`). To start the server by hand:
+
+```bash
+python -m emporio.mcp_server       # waits for an MCP client on stdin/stdout; Ctrl+C stops it
+```
+
+A client starts it for you. In Claude Desktop, add this to `claude_desktop_config.json` (Settings > Developer > Edit Config) and restart the app. Use the absolute path to the Python inside the project's `.venv`:
+
+```json
+{
+  "mcpServers": {
+    "emporio": {
+      "command": "C:\\path\\to\\emporio-musica-agent\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "emporio.mcp_server"],
+      "env": { "EMPORIO_NOW": "2026-03-25T10:00" }
+    }
+  }
+}
+```
+
+On macOS or Linux the command is `/path/to/emporio-musica-agent/.venv/bin/python`. `EMPORIO_NOW` is optional; the demo date keeps the orders realistic (see [Single clock and demo date](#single-clock-and-demo-date)).
+
+In Claude Code:
+
+```bash
+claude mcp add emporio -e EMPORIO_NOW=2026-03-25T10:00 -- /path/to/emporio-musica-agent/.venv/bin/python -m emporio.mcp_server
+# Windows: ... -- C:\path\to\emporio-musica-agent\.venv\Scripts\python.exe -m emporio.mcp_server
+```
+
 ## 3. Technical decisions
 
 ### Agent approach: native tool calling, hand-written loop
 
 *Considered:* vector RAG over everything, an SQL-writing agent, ReAct prompting, and frameworks (LangChain, LlamaIndex, CrewAI).
-*Why this:* the task is "know when to look up data vs. policy", which is exactly what function calling expresses. Most questions need exact structured answers (price, stock, order status), and retrieving text chunks is the wrong tool for that. An SQL agent would let the model write queries over customer data and own the business rules. A framework would hide a loop that fits in one file of about 110 lines and that I wanted to control (history window, rollback, limits, tracing). The manual is small enough for simple retrieval (next point), so the design is a hybrid: tools for data, keyword retrieval for text.
+*Why this:* the task is "know when to look up data vs. policy", which is exactly what function calling expresses. Most questions need exact structured answers (price, stock, order status), and retrieving text chunks is the wrong tool for that. An SQL agent would let the model write queries over customer data and own the business rules. For a loop of about 110 lines a framework would hide what I wanted to control (history window, rollback, limits, tracing). For longer workflows with branching, shared state and checkpoints, such as a return process with human approval, I would use LangGraph. The manual is small enough for simple retrieval (next point), so the design is a hybrid: tools for data, keyword retrieval for text.
 
 ### Model and provider: `gpt-5.4-mini` via Chat Completions
 
@@ -264,6 +301,7 @@ src/emporio/
   agent/             config, LLM client, system prompt, loop, sessions, CLI
   evals/             scenario runner (python -m emporio.evals)
   demo.py            conversation recorder (python -m emporio.demo)
+  mcp_server.py      the same tools over MCP (python -m emporio.mcp_server)
 evals/scenarios.json 21 eval scenarios
 examples/            5 recorded conversations and their scripts
 docs/                data_quality.md, tools.md, agent.md, evaluation.md, raw_data.md

@@ -8,6 +8,11 @@ Unknown tools, invalid JSON and wrong argument types come back as
 `{"error": ...}`; any other exception inside a tool is turned into an error
 result by the agent loop, so a broken tool never ends the conversation.
 
+The same tools are also exposed over MCP by `python -m emporio.mcp_server`. Its
+tool list comes from `SCHEMAS` and every call goes through `call_tool`, so the
+rules below apply there unchanged (see the README section "Using the tools from
+any MCP client").
+
 **Only arguments declared in the schema reach the function.** Anything else the
 model sends (for example `now`, `today`, `limit` or `conn`, which exist as Python
 parameters for tests and internal use) is dropped and listed in the result as
