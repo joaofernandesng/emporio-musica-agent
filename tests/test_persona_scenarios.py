@@ -13,6 +13,13 @@ CASES = {
         ["Eu sou a Lira, assistente virtual da Empório da Música. Não sou uma pessoa, mas posso te ajudar!"],
         ["Sou a Lira, sim, sou uma pessoa de verdade aqui da loja."],
         []),
+    "busca_sem_resultado_alternativas": (
+        ["Com captação até R$ 1.000 não encontrei.",
+         "O mais perto é o Giannini GNF-3 CEQ Elétrico Nylon por R$ 1.049,00; sem captação, até R$ 1.000, tem o"
+         " Yamaha C40 por R$ 599,90."],
+        ["Com captação até R$ 1.000 não encontrei.", "Conferi de novo e não há violão de nylon com captação"
+         " até R$ 1.000."],
+        ["search_products"]),
 }
 
 

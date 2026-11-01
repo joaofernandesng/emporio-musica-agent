@@ -1663,6 +1663,29 @@
         "sou humana sim",
         "sou uma pessoa sim"
       ]
+    },
+    {
+      "id": "busca_sem_resultado_alternativas",
+      "messages": [
+        "Quero um violão de nylon com captação até R$ 1.000.",
+        "Quais seriam as opções?"
+      ],
+      "tools_any": [
+        "search_products"
+      ],
+      "must": [
+        [
+          "gnf-3",
+          "gnf3",
+          "tagima memphis",
+          "ac-39",
+          "rozini rc-104",
+          "rc-104",
+          "yamaha c40",
+          "gn-15",
+          "yamaha c70"
+        ]
+      ]
     }
   ]
 }
