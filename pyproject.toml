@@ -16,7 +16,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest==9.2.0"]
+# Optional MCP server (python -m emporio.mcp_server); dev includes it so its tests run.
+mcp = ["mcp==2.3.0"]
+dev = ["pytest==9.2.0", "mcp==2.3.0"]
 
 [project.scripts]
 emporio = "emporio.agent.cli:main"

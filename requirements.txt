@@ -1,3 +1,4 @@
+mcp==2.3.0
 openai==3.42.0
 python-dotenv==1.2.4
 pypdf==6.21.4
