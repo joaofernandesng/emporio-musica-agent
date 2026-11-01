@@ -6,27 +6,27 @@ are for that version.
 
 ## Method
 
-- **Model:** `gpt-5.4-mini` through Chat Completions (no sampling or reasoning
+- Model: `gpt-5.4-mini` through Chat Completions (no sampling or reasoning
   parameters are sent).
-- **Scenarios:** 21, in `evals/scenarios.json`. Each has one or more customer
+- Scenarios: 21, in `evals/scenarios.json`. Each has one or more customer
   messages and objective checks. They cover products and prices, store data,
   opening hours, out-of-stock and discontinued items, active and expired
   promotions (including "which guitars are on promotion?"), PIX with a promotion, order status (verified, wrong e-mail, late
   order), withdrawal and exchange (generic, in-store, delivered order, defect with
   and without an order), accessories, out-of-scope questions, a prompt-injection
   attempt and a complaint.
-- **Checks (automatic):** expected tools called (`tools_any`, `tools_all`,
+- Checks (automatic): expected tools called (`tools_any`, `tools_all`,
   `tools_none`); phrases that must appear (alternatives per item) or must not
-  appear; list size limits. Text matching ignores case and accents. **Global bans
-  apply to every reply:** the words "manual" and "seção" (the policy manual is
+  appear; list size limits. Text matching ignores case and accents. Global bans
+  apply to every reply: the words "manual" and "seção" (the policy manual is
   internal), "ferramenta" (the agent must not talk about its tools), "prioridade",
   and wording that makes the legal warranty start *after* the 30-day exchange.
-- **Fixed clock:** `EMPORIO_NOW=2026-03-25T10:00` (Wednesday, store open), so
+- Fixed clock: `EMPORIO_NOW=2026-03-25T10:00` (Wednesday, store open), so
   opening hours, late orders and return windows are reproducible.
-- **Repetitions:** 3 executions per scenario in the final validation, because the
+- Repetitions: 3 executions per scenario in the final validation, because the
   model is not deterministic.
-- **Tickets** created during evals go to a temporary file, not to the real queue.
-- **Human reading:** after each round the replies were read for tone, invented
+- Tickets created during evals go to a temporary file, not to the real queue.
+- Human reading: after each round the replies were read for tone, invented
   facts, undue promises, policy errors and arithmetic done by the model. Several
   defects were found this way that no automatic check covered.
 
@@ -57,10 +57,10 @@ difference is within noise. The per-scenario shifts are explained below.
 | reclamacao_ticket | 3/3 | 3/3 |
 | arrependimento_pedido_7_vencido | 2/3 | 2/3 |
 | arrependimento_loja_fisica | 3/3 | 3/3 |
-| defeito_com_pedido_7 | **0/3** | 0/3 |
+| defeito_com_pedido_7 | 0/3 | 0/3 |
 | defeito_sem_pedido | 3/3 | 3/3 |
 | promocoes_ativas_violao | 3/3 | 3/3 |
-| **Total** | **57/63** | 58/63 |
+| Total | 57/63 | 58/63 |
 
 Cost of this validation: US$ 0.28 (337,384 tokens at US$ 0.75 / 4.50 per 1M
 input/output tokens), about US$ 0.09 per full execution. Accumulated over all
@@ -74,16 +74,16 @@ conversations cost about US$ 0.29 more over all recordings).
 | 1 | 16 | 15/16 | Out-of-stock product: the agent *offered* alternatives instead of showing them. Prompt rule tightened. Long lists (12 items) and an "accessory" offer in an out-of-scope refusal also found by reading. |
 | 2 | 16 | 15/16 (16/16 after fixing one brittle check) | A correct answer ("fechamos às 18:00") was rejected by an over-strict check. Reading found the agent citing the internal manual and inventing "prioridade" in a ticket. |
 | 3 | 19 | 16/19 | New return-window scenarios. The agent opened a ticket nobody asked for. Prompt: tickets only on complaint, defect or delay. Two checks were too narrow and were widened for correct replies. |
-| Final | 19 × 3 | 52/57 (54/57 after two brittle checks) | Alternatives for unavailable products worked only 1 in 3 times and accessory refusals were imprecise: the prompt alone was inconsistent. **These became deterministic tool behaviour** (`alternatives`, `not_sold_accessory`). |
+| Final | 19 × 3 | 52/57 (54/57 after two brittle checks) | Alternatives for unavailable products worked only 1 in 3 times and accessory refusals were imprecise: the prompt alone was inconsistent. These became deterministic tool behaviour (`alternatives`, `not_sold_accessory`). |
 | Validation | 20 × 3 | 53/60 | Both fixed (3/3). Reading found the model subtracting a promotion amount itself, "prioridade" in a late-order reply and a warranty described as starting after the exchange. |
 | Freeze | 20 × 3 | 56/60 | The tool now returns `discount_brl`/`discount_text`; global bans for "prioridade" and sequential-warranty wording; the defect note is attached to every exchange or warranty section; the prompt asks for the order first on defects and for deadlines. |
-| Promotion fix | 21 × 3 | **57/63** | Recording example 4 showed the agent claiming there was no promotion on guitars: the search was capped at 20 results sorted by price and the model concluded "none" from an incomplete list (the evals had no scenario for it). The tool gained an `on_promotion` filter, `total_count`/`returned_count`/`truncated` and a warning note; the prompt now says to use the filter, not to conclude absence from a truncated list and never to mention internal tools to the customer. New scenario (3/3) and a global ban on the word "ferramenta". |
-| Independent review | 21 × 3 | **58/63** | A read-only review of the repository (fresh session, no context from the build) found that the defect/warranty note returned by `search_policies` told the model to open a ticket for any exchange or warranty question, contradicting the prompt (tickets only on complaint, defect or delay). The note now states the rule only. Same round: accessory plurals, "Campo Grande/MS" in shipping, tool arguments outside the schema (now dropped), category words in product names and a stale clock in resumed sessions. Effect: `defeito_sem_pedido` went from 1/3 to 3/3, but `defeito_com_pedido_7` fell from 3/3 to 0/3 (see below). |
-| Verified contact | 21 × 3 | **57/63** | `defeito_com_pedido_7` had fallen to 0/3 because the agent asked for an e-mail or phone again after the order was verified. `get_order_status` now returns `verified_contact` (the contact the customer gave in that query, normalised, never one from the customer record) and the ticket rule says to use it. Effect: no reply asked for the contact again, but the agent now offers the ticket instead of opening it, so the scenario still fails 0/3 (see below). |
+| Promotion fix | 21 × 3 | 57/63 | Recording example 4 showed the agent claiming there was no promotion on guitars: the search was capped at 20 results sorted by price and the model concluded "none" from an incomplete list (the evals had no scenario for it). The tool gained an `on_promotion` filter, `total_count`/`returned_count`/`truncated` and a warning note; the prompt now says to use the filter, not to conclude absence from a truncated list and never to mention internal tools to the customer. New scenario (3/3) and a global ban on the word "ferramenta". |
+| Independent review | 21 × 3 | 58/63 | A read-only review of the repository (fresh session, no context from the build) found that the defect/warranty note returned by `search_policies` told the model to open a ticket for any exchange or warranty question, contradicting the prompt (tickets only on complaint, defect or delay). The note now states the rule only. Same round: accessory plurals, "Campo Grande/MS" in shipping, tool arguments outside the schema (now dropped), category words in product names and a stale clock in resumed sessions. Effect: `defeito_sem_pedido` went from 1/3 to 3/3, but `defeito_com_pedido_7` fell from 3/3 to 0/3 (see below). |
+| Verified contact | 21 × 3 | 57/63 | `defeito_com_pedido_7` had fallen to 0/3 because the agent asked for an e-mail or phone again after the order was verified. `get_order_status` now returns `verified_contact` (the contact the customer gave in that query, normalised, never one from the customer record) and the ticket rule says to use it. Effect: no reply asked for the contact again, but the agent now offers the ticket instead of opening it, so the scenario still fails 0/3 (see below). |
 
 Design lesson: facts and rules that must be exact (prices, discounts, deadlines,
-alternatives, what the store does not sell) were moved into deterministic tools;
-the prompt keeps tone, conversation flow and when to hand off to a human. Tool
+alternatives, what the store does not sell) were moved into deterministic tools.
+The prompt keeps tone, conversation flow and when to hand off to a human. Tool
 outputs must state facts, not instructions that compete with the prompt (the
 lesson of the last round).
 
@@ -101,16 +101,16 @@ tool note, which was removed in the last round. What remains:
   that ban re-asking passed 3/3). It now stops one step early: it offers to open
   the ticket and waits for a yes, so `create_ticket` is not called and the check
   for "24 horas" fails in two of the three runs. The check was not relaxed.
-- **`arrependimento_pedido_7_vencido` (2/3):** once, after an expired withdrawal,
+- `arrependimento_pedido_7_vencido` (2/3): once, after an expired withdrawal,
   the agent opened a ticket nobody asked for.
-- **`pix_com_promocao` (2/3):** once the agent answered from `get_product`
+- `pix_com_promocao` (2/3): once the agent answered from `get_product`
   without calling `calculate_payment`; the amounts it gave were the tool's.
-- **`violoes_ate_1000` (2/3):** once the reply listed 8 guitars, above the limit
+- `violoes_ate_1000` (2/3): once the reply listed 8 guitars, above the limit
   of 4.
-- **Alternatives** are matched by category, string type, string count (read from
+- Alternatives are matched by category, string type, string count (read from
   the product name, since it is not a structured spec) and price; they do not
   distinguish acoustic from electro-acoustic.
-- **Order status** shows what the data holds (statuses months old, no unit prices);
+- Order status shows what the data holds (statuses months old, no unit prices);
   receipt date is approximated by the estimated delivery date (see
   `data_quality.md`, O10).
 - Only one model and one fixed date were evaluated; with 3 runs per scenario a

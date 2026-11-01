@@ -4,7 +4,7 @@
 immutable: nothing in this project edits them. Corrections are always expressed
 as derived columns or flags downstream (see `docs/data_quality.md`).
 
-The original file names contain spaces and accents. They are **not** renamed;
+The original file names contain spaces and accents. They are not renamed;
 the loader maps logical table names to the real file names
 (`src/emporio/build_db.py`, `RAW_FILES`).
 

@@ -22,9 +22,9 @@ to format or compute prices.
 
 | Tool | Purpose | Key decisions |
 |---|---|---|
-| `search_products` | Catalog search with text + filters | Accent/case/plural-insensitive; all query words must match name, category or specs; price filters use the **current** price (promotion applied); unavailable products hidden unless `include_unavailable`; empty categories explain themselves in `notes`. |
+| `search_products` | Catalog search with text + filters | Accent/case/plural-insensitive; all query words must match name, category or specs; price filters use the current price (promotion applied); unavailable products hidden unless `include_unavailable`; empty categories explain themselves in `notes`. |
 | `get_product` | One product by id or approximate name | Handles `gd 20` vs `GD20`, typos, articles and category words ("o violão Takamine GD20"; a category word must agree with the product's category); ambiguous names return candidates; unreliable descriptions are withheld (see `data_quality.md` P1). |
-| `get_order_status` | Order lookup | Requires order id + e-mail/phone of the order's owner; **one identical generic answer** for unknown order, wrong contact and missing contact; flags `delayed` only for `shipped` orders past their estimate (open orders are not flagged: the manual sets no processing deadline) and reports `days_since_order`; no unit prices (the data has none). A verified answer carries `verified_contact`: the e-mail or phone the customer gave in that query, normalised, so a ticket reuses it without asking again. It is never a contact from the customer record that the customer did not give. |
+| `get_order_status` | Order lookup | Requires order id + e-mail/phone of the order's owner; one identical generic answer for unknown order, wrong contact and missing contact; flags `delayed` only for `shipped` orders past their estimate (open orders are not flagged: the manual sets no processing deadline) and reports `days_since_order`; no unit prices (the data has none). A verified answer carries `verified_contact`: the e-mail or phone the customer gave in that query, normalised, so a ticket reuses it without asking again. It is never a contact from the customer record that the customer did not give. |
 | `calculate_payment` | Price, PIX, installments, combinations | PIX 5% only on items without promotion; tiers 2–3x ≥ R$ 50, 4–6x ≥ R$ 80, 7–12x ≥ R$ 100; combination only strictly above R$ 2.000; returns a Portuguese `reason` when refused plus `max_installments`. |
 | `estimate_shipping` | Shipping cost and lead time | Campo Grande: free strictly above R$ 500, else R$ 35, 1–3 business days. Other cities: no price (needs ZIP/weight), returns PAC/SEDEX/Jadlog with lead times. Drums, keyboards/pianos and basses are flagged as special freight. |
 | `get_store_hours` | Open/closed now, next opening | `America/Campo_Grande`; Mon–Fri 09–18, Sat 09–13; opening minute inclusive, closing minute exclusive; fixed list of national holidays 2025–2026. |
@@ -54,14 +54,14 @@ which a truncated list led the agent to claim there were no promotions on guitar
 
 ## Alternatives and accessories
 
-- **`alternatives`** (in `get_product` and in `search_products` results): for an
+- `alternatives` (in `get_product` and in `search_products` results): for an
   out-of-stock, discontinued or coming-soon product, up to 3 *available*
   products of the same category, same `string_type` when it has one, and the same
   string-count marker. The count ("7 Cordas") is not a structured spec, so it is
   read from the product name (the source of truth); a 6-string guitar never gets
   a 7-string suggestion and vice versa. Ordered by price proximity; an empty list
   comes with `alternatives_note`.
-- **`not_sold_accessory`** (`search_products`): the store sells instruments only
+- `not_sold_accessory` (`search_products`): the store sells instruments only
   (manual 1 and 7.1). A query containing, after removing accents/case/plural, one
   of *corda, encordoamento, cabo, palheta, pedal, amplificador, "caixa
   amplificada", case, capa, bag, afinador, estante, baqueta, correia* (plurals
@@ -87,14 +87,14 @@ These are the interpretations documented in `docs/data_quality.md` (M1–M8) and
 listed in the README (S1–S20); they are isolated in constants so they can be
 changed in one place.
 
-- "Metropolitan region" = **Campo Grande only** (`shipping.METRO_CITIES`). The
+- "Metropolitan region" = Campo Grande only (`shipping.METRO_CITIES`). The
   city is compared without accents, case, punctuation or a trailing state, so
   "Campo Grande/MS" and "campo grande - ms" count as Campo Grande.
-- "Acima de" = **strictly greater** (free shipping at > R$ 500; combined
+- "Acima de" = strictly greater (free shipping at > R$ 500; combined
   payments at > R$ 2.000; the combination test uses the merchandise value after
   promotions, before the PIX discount).
-- 2–3x installments: **each installment ≥ R$ 50** (`payment.min_installment_cents`).
-- PIX 5% is applied **line by line**, only to items without an active promotion.
+- 2–3x installments: each installment ≥ R$ 50 (`payment.min_installment_cents`).
+- PIX 5% is applied line by line, only to items without an active promotion.
 - Active promotion = `is_active = 1` (no dates in the data); the highest
   percentage wins if several were active.
 - Installment cents that do not divide evenly go to the first installments
