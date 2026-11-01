@@ -243,7 +243,9 @@
           "apenas",
           "exclusivamente",
           "somente",
-          "nao consigo"
+          "nao consigo",
+          "trabalha so",
+          "trabalha apenas"
         ]
       ]
     },
@@ -319,7 +321,9 @@
           "expirou",
           "fora do prazo",
           "encerrou",
-          "ja se foi"
+          "ja se foi",
+          "venceu",
+          "ja passou"
         ],
         [
           "garantia",
