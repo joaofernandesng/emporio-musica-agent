@@ -40,7 +40,9 @@ SCHEMAS: list[dict] = [
     _tool(
         "search_products",
         "Search the catalog by text and filters. Use for any question about which products "
-        "exist, prices or availability. Hides unavailable products unless include_unavailable.",
+        "exist, prices or availability. Hides unavailable products unless include_unavailable; "
+        "unavailable items come with ready-made `alternatives`. If not_sold_accessory is true, the "
+        "customer asked for an accessory, which the store does not sell.",
         {
             "query": {"type": "string", "description": "Free text, e.g. 'takamine' or 'ukulele tenor'."},
             "category": {"type": "string", "description": "Category name, e.g. 'violões', 'baterias'."},

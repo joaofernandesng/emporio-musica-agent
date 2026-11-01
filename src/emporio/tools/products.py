@@ -22,6 +22,78 @@ from emporio.tools.common import (
 STRING_ALIASES = {"aco": "steel", "aço": "steel", "steel": "steel", "nylon": "nylon", "nailon": "nylon"}
 
 
+# ---- accessories: the store sells instruments only (manual 1 and 7.1) ----------------
+# Normalised (no accents, plural folded) query words that mean an accessory.
+ACCESSORY_TERMS = {
+    "corda", "encordoamento", "cabo", "palheta", "pedal", "amplificador", "case", "capa",
+    "bag", "afinador", "estante", "baqueta", "correia",
+}
+NUMBER_WORDS = {"seis", "sete", "oito", "nove", "dez", "onze", "doze"}
+# "violao com afinador integrado" asks for an instrument feature, not the accessory.
+QUALIFIER_BEFORE = {"com", "c"}
+QUALIFIER_AFTER = {"integrado", "embutido", "interno", "incluso"}
+ACCESSORY_MESSAGE = (
+    "A Empório da Música trabalha exclusivamente com instrumentos musicais: não vende "
+    "acessórios como cordas, cabos, palhetas, pedais, amplificadores, cases, capas, "
+    "afinadores, estantes, baquetas ou correias."
+)
+
+
+def accessory_terms(query: str | None) -> list[str]:
+    """Accessory words in ``query`` (empty when it asks for an instrument).
+
+    Ignored: "cordas" after a number ("7 cordas", "sete cordas": a string count),
+    and a term used as a feature of an instrument ("com afinador integrado").
+    "caixa amplificada" counts as an amplifier; "caixa" alone (snare drum) does not.
+    """
+    words = tokens(query or "")
+    found: list[str] = []
+    for i, word in enumerate(words):
+        is_term = word in ACCESSORY_TERMS or (word == "amplificada" and "caixa" in words)
+        if not is_term:
+            continue
+        before = words[i - 1] if i else ""
+        after = words[i + 1] if i + 1 < len(words) else ""
+        if word == "corda" and (before.isdigit() or before in NUMBER_WORDS):
+            continue
+        if before in QUALIFIER_BEFORE or (i > 1 and words[i - 2] in QUALIFIER_BEFORE) or after in QUALIFIER_AFTER:
+            continue
+        found.append(word)
+    return found
+
+
+def alternatives_for(db: sqlite3.Connection, row: sqlite3.Row, limit: int = 3) -> list[dict[str, Any]]:
+    """Up to ``limit`` AVAILABLE products to suggest instead of an unavailable one.
+
+    Same category, same ``string_type`` when the product has one, and the same
+    string-count marker in the name ("7 Cordas"; the count is not a structured
+    spec, so the name is the source of truth), closest current price first.
+    """
+    def marker(name: str) -> str | None:
+        m = re.search(r"\b(\d+) cordas\b", strip_accents(name).lower())
+        return m.group(1) if m else None
+
+    wanted = marker(row["name"])
+    pool = [
+        r for r in db.execute(_BASE_SQL + " WHERE p.category_id = ? AND p.availability = 'available'",
+                              (row["category_id"],)).fetchall()
+        if r["product_id"] != row["product_id"]
+        and r["string_type"] == row["string_type"]
+        and marker(r["name"]) == wanted
+    ]
+    items = [summarize(db, r) for r in pool]
+    items.sort(key=lambda a: (abs(a["current_price_brl"] - brl(row["price_cents"])), a["product_id"]))
+    return items[:limit]
+
+
+def _attach_alternatives(db: sqlite3.Connection, row: sqlite3.Row, target: dict[str, Any]) -> None:
+    if row["availability"] == "available":
+        return
+    target["alternatives"] = alternatives_for(db, row)
+    if not target["alternatives"]:
+        target["alternatives_note"] = "Não há produto disponível equivalente no catálogo agora."
+
+
 def active_promotion(conn: sqlite3.Connection, product_id: int, price_cents: int) -> dict | None:
     """Return the active promotion of a product, or ``None``.
 
@@ -110,6 +182,11 @@ def search_products(
         ``{"count", "results", "truncated", "notes"}`` with JSON-safe values.
     """
     notes: list[str] = []
+    matched_terms = accessory_terms(query)
+    if matched_terms:
+        return {"count": 0, "results": [], "truncated": False, "notes": [],
+                "not_sold_accessory": True, "matched_terms": matched_terms,
+                "message": ACCESSORY_MESSAGE}
     with open_db(conn) as db:
         rows = db.execute(_BASE_SQL + " ORDER BY p.product_id").fetchall()
         categories = db.execute("SELECT category_id, name FROM categories").fetchall()
@@ -144,7 +221,11 @@ def search_products(
                 if wanted <= set(tokens(r["name"] + " " + r["category_name"] + " " + _spec_text(r)))
             ]
 
-        results = [summarize(db, r) for r in rows]
+        results = []
+        for r in rows:
+            item = summarize(db, r)
+            _attach_alternatives(db, r, item)
+            results.append(item)
 
     if min_price is not None:
         results = [r for r in results if r["current_price_brl"] >= min_price]
@@ -221,6 +302,7 @@ def get_product(
 
 def _found(db: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
     product = summarize(db, row)
+    _attach_alternatives(db, row, product)
     product["specs"] = json.loads(row["specs_json"])
     product["description_reliable"] = bool(row["description_reliable"])
     if row["description_reliable"]:

@@ -31,6 +31,24 @@ and is computed with the single clock. Assumptions (see `data_quality.md` O10):
 `estimated_delivery` approximates the receipt date and system orders count as
 online purchases. Other statuses return `return_windows: null` plus a note.
 
+## Alternatives and accessories
+
+- **`alternatives`** (in `get_product` and in `search_products` results): for an
+  out-of-stock, discontinued or coming-soon product, up to 3 *available*
+  products of the same category, same `string_type` when it has one, and the same
+  string-count marker. The count ("7 Cordas") is not a structured spec, so it is
+  read from the product name (the source of truth); a 6-string guitar never gets
+  a 7-string suggestion and vice versa. Ordered by price proximity; an empty list
+  comes with `alternatives_note`.
+- **`not_sold_accessory`** (`search_products`): the store sells instruments only
+  (manual 1 and 7.1). A query containing, after removing accents/case/plural, one
+  of *corda, encordoamento, cabo, palheta, pedal, amplificador, "caixa
+  amplificada", case, capa, bag, afinador, estante, baqueta, correia* returns no
+  catalog results, `not_sold_accessory: true` and a message. False positives
+  avoided: "cordas" after a number ("7 cordas", "sete cordas"), a term used as an
+  instrument feature ("com afinador integrado", "com cordas de aço"), "caixa"
+  alone (snare drum) and product names such as "Tagima Dallas Tuner".
+
 ## Clock
 
 Every tool that needs "now" or "today" (store hours, order delay, ticket
