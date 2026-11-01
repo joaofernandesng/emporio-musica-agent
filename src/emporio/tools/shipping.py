@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from typing import Any
 
@@ -14,6 +15,16 @@ METRO_CITIES = {"campo grande"}  # SUPOSIÇÃO: the manual does not define the m
 # Large items that may need a quoted ("especial") freight: drums, keyboards/pianos,
 # basses (the manual says "contrabaixos").
 BULKY_CATEGORY_IDS = {2, 3, 4}
+
+# A trailing state is ignored: "Campo Grande/MS", "Campo Grande - MS", "campo grande ms".
+STATE_SUFFIX = re.compile(r"\s+(ms|mato grosso do sul)$")
+
+
+def normalize_city(city: str | None) -> str:
+    """Lowercase, no accents or punctuation, without a trailing MS state suffix."""
+    text = re.sub(r"[^a-z0-9]+", " ", strip_accents(city or "")).strip()
+    return STATE_SUFFIX.sub("", text)
+
 
 CARRIERS = [
     {"service": "PAC (Correios)", "delivery_time": "5 a 12 dias úteis", "tracking": True, "insurance": True},
@@ -61,8 +72,7 @@ def estimate_shipping(
                 if r["category_id"] in BULKY_CATEGORY_IDS
             ]
 
-    normalized = strip_accents(city or "").strip()
-    if normalized in METRO_CITIES:
+    if normalize_city(city) in METRO_CITIES:
         free = subtotal > FREE_ABOVE_CENTS
         fee = 0 if free else FLAT_FEE_CENTS
         result: dict[str, Any] = {

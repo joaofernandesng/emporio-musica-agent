@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import pytest
+
 from emporio.tools.hours import get_store_hours
 from emporio.tools.shipping import estimate_shipping
 
@@ -84,3 +86,16 @@ def test_aware_datetimes_are_converted_to_campo_grande_time():
 
 def test_limitation_is_reported():
     assert "municipais" in get_store_hours("2026-10-30T10:00")["limitation"]
+
+
+@pytest.mark.parametrize("city", [
+    "Campo Grande/MS", "Campo Grande - MS", "Campo Grande, MS", "campo grande ms",
+    "Campo Grande-MS", "Campo Grande (MS)", "CAMPO GRANDE / ms",
+])
+def test_city_with_state_suffix_is_campo_grande(conn, city):
+    assert estimate_shipping(100, city, conn=conn)["region"] == "metropolitan_campo_grande"
+
+
+@pytest.mark.parametrize("city", ["Dourados/MS", "Campo Grande do Sul", "Grande Campo"])
+def test_state_suffix_does_not_turn_other_cities_into_campo_grande(conn, city):
+    assert estimate_shipping(100, city, conn=conn)["region"] == "other_cities"
