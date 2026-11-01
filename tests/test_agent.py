@@ -195,6 +195,18 @@ def test_session_persists_and_resumes(tmp_path):
     assert sent == ["oi", "Olá!", "e então?"]
 
 
+def test_resumed_session_gets_a_fresh_system_prompt(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMPORIO_NOW", "2026-03-25T10:00")
+    run_chat(FakeClient(text("Olá!")), ["oi", "/sair"], tmp_path, "day")
+    monkeypatch.setenv("EMPORIO_NOW", "2026-03-27T15:30")
+    second = FakeClient(text("Voltei!"))
+    run_chat(second, ["e então?", "/sair"], tmp_path, "day")
+    system = second.requests[0][0]
+    assert system["role"] == "system"
+    assert "27/03/2026, 15:30" in system["content"] and "25/03/2026" not in system["content"]
+    assert [m["role"] for m in second.requests[0]].count("system") == 1
+
+
 def test_reset_starts_a_new_conversation(tmp_path):
     client = FakeClient(text("a"), text("b"))
     run_chat(client, ["um", "/reset", "dois", "/sair"], tmp_path, "r1")

@@ -29,8 +29,14 @@ def print_trace(result: TurnResult, out=sys.stderr) -> None:
 
 
 def open_agent(client: LLMClient, session: Session, history_window: int) -> Agent:
-    """Resume the session if its file exists, otherwise start it with a fresh prompt."""
+    """Resume the session if its file exists, otherwise start it with a fresh prompt.
+
+    A resumed conversation never reuses the saved system message: it carries the
+    date and time of when the session started, so it is rebuilt from the clock now.
+    """
     history = session.load()
+    if history and history[0].get("role") == "system":
+        history[0] = {"role": "system", "content": build_system_prompt()}
     agent = Agent(client, history or None, history_window=history_window)
     if not history:
         session.append(agent.history)
