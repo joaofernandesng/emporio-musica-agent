@@ -39,14 +39,25 @@ ACCESSORY_MESSAGE = (
 )
 
 
+def _singular(word: str) -> str:
+    """Fold the Portuguese plurals that ``tokens`` leaves behind: pedai(s) -> pedal,
+    amplificadore(s) -> amplificador."""
+    if word.endswith("ai") and len(word) > 3:
+        return word[:-1] + "l"
+    if word.endswith("ore") and len(word) > 4:
+        return word[:-1]
+    return word
+
+
 def accessory_terms(query: str | None) -> list[str]:
     """Accessory words in ``query`` (empty when it asks for an instrument).
 
-    Ignored: "cordas" after a number ("7 cordas", "sete cordas": a string count),
-    and a term used as a feature of an instrument ("com afinador integrado").
+    Plurals are recognised ("pedais", "amplificadores", "cabos"). Ignored: "cordas"
+    after a number ("7 cordas", "sete cordas": a string count), and a term used as
+    a feature of an instrument ("com afinador integrado").
     "caixa amplificada" counts as an amplifier; "caixa" alone (snare drum) does not.
     """
-    words = tokens(query or "")
+    words = [_singular(w) for w in tokens(query or "")]
     found: list[str] = []
     for i, word in enumerate(words):
         is_term = word in ACCESSORY_TERMS or (word == "amplificada" and "caixa" in words)

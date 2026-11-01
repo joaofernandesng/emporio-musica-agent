@@ -81,3 +81,19 @@ def test_instrument_queries_are_not_accessories(conn, query):
 def test_dallas_tuner_is_still_found(conn):
     out = search_products(query="Dallas Tuner", conn=conn)
     assert out["count"] == 1 and "Tuner" in out["results"][0]["name"]
+
+
+@pytest.mark.parametrize("query", [
+    "pedais", "amplificadores", "afinadores", "cabos", "cases", "capas", "baquetas",
+    "correias", "estantes", "vocês vendem pedais?", "pedais de efeito", "AMPLIFICADORES valvulados",
+])
+def test_accessory_plurals_are_flagged(conn, query):
+    out = search_products(query=query, conn=conn)
+    assert out.get("not_sold_accessory") is True, query
+
+
+@pytest.mark.parametrize("query", [
+    "violão com afinadores integrados", "violões de 7 cordas",
+])
+def test_plural_instrument_features_are_not_accessories(conn, query):
+    assert "not_sold_accessory" not in search_products(query=query, conn=conn)
