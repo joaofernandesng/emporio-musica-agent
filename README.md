@@ -64,7 +64,7 @@ Inside the chat: `/reset` starts over, `/sair` quits (Ctrl+C at the prompt also 
 
 ### Tests
 
-Offline, no key needed, about 3 seconds.
+Offline, no key needed, about 5 seconds.
 
 ```bash
 pytest
@@ -125,7 +125,7 @@ On each turn the user message goes to the model with the tool schemas. If the mo
 ### Model and provider: `gpt-5.4-mini` via Chat Completions
 
 *Considered:* cheaper small models and older mini models, local models.
-*Why:* it supports tool calling, runs without extra reasoning by default (predictable cost and latency) and costs US$ 0.75 / 4.50 per 1M input/output tokens. A whole 21-scenario eval costs about US$ 0.10. My first shortlist included models that OpenAI's documentation marks as deprecated, so I dropped them. The request only sends `model`, `messages` and `tools` (no sampling or reasoning parameters), and `OPENAI_BASE_URL` lets any OpenAI-compatible provider be used. The client retries transient errors (429, 5xx, timeouts) twice with backoff and never retries authentication errors.
+*Why:* it supports tool calling, runs without extra reasoning by default (predictable cost and latency) and costs US$ 0.75 / 4.50 per 1M input/output tokens. A whole 21-scenario eval costs about US$ 0.09. My first shortlist included models that OpenAI's documentation marks as deprecated, so I dropped them. The request only sends `model`, `messages` and `tools` (no sampling or reasoning parameters), and `OPENAI_BASE_URL` lets any OpenAI-compatible provider be used. The client retries transient errors (429, 5xx, timeouts) twice with backoff and never retries authentication errors.
 
 ### Policies: sectioned Markdown plus keyword search, no embeddings
 
