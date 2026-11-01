@@ -1,10 +1,20 @@
-# Tools (stage 1)
+# Tools
 
 Eight pure Python functions in `src/emporio/tools/`. They need no LLM and no API
 key; every return value is JSON-serialisable. `emporio.tools.SCHEMAS` holds the
 OpenAI tool-calling schema of each one, and `emporio.tools.call_tool(name, args)`
-runs a tool from the model's (JSON string) arguments and always returns a JSON
-string, even for unknown tools or bad arguments (`{"error": ...}`).
+runs a tool from the model's (JSON string) arguments and returns a JSON string.
+Unknown tools, invalid JSON and wrong argument types come back as
+`{"error": ...}`; any other exception inside a tool is turned into an error
+result by the agent loop, so a broken tool never ends the conversation.
+
+**Only arguments declared in the schema reach the function.** Anything else the
+model sends (for example `now`, `today`, `limit` or `conn`, which exist as Python
+parameters for tests and internal use) is dropped and listed in the result as
+`ignored_arguments`, which shows up in `--trace` and in the eval reports. Dropping
+was preferred over returning an error: the security goal is the same (nothing
+outside the schema is reachable), and a harmless extra does not cost the model
+another round-trip.
 
 All money is integer cents internally (no float arithmetic); results expose
 `*_brl` numbers plus pre-formatted `*_text` (`R$ 2.199,00`) so the model never has
@@ -13,12 +23,12 @@ to format or compute prices.
 | Tool | Purpose | Key decisions |
 |---|---|---|
 | `search_products` | Catalog search with text + filters | Accent/case/plural-insensitive; all query words must match name, category or specs; price filters use the **current** price (promotion applied); unavailable products hidden unless `include_unavailable`; empty categories explain themselves in `notes`. |
-| `get_product` | One product by id or approximate name | Handles `gd 20` vs `GD20` and typos; ambiguous names return candidates; unreliable descriptions are withheld (see `data_quality.md` P1). |
+| `get_product` | One product by id or approximate name | Handles `gd 20` vs `GD20`, typos, articles and category words ("o violão Takamine GD20"; a category word must agree with the product's category); ambiguous names return candidates; unreliable descriptions are withheld (see `data_quality.md` P1). |
 | `get_order_status` | Order lookup | Requires order id + e-mail/phone of the order's owner; **one identical generic answer** for unknown order, wrong contact and missing contact; flags `delayed` only for `shipped` orders past their estimate (open orders are not flagged: the manual sets no processing deadline) and reports `days_since_order`; no unit prices (the data has none). |
 | `calculate_payment` | Price, PIX, installments, combinations | PIX 5% only on items without promotion; tiers 2–3x ≥ R$ 50, 4–6x ≥ R$ 80, 7–12x ≥ R$ 100; combination only strictly above R$ 2.000; returns a Portuguese `reason` when refused plus `max_installments`. |
 | `estimate_shipping` | Shipping cost and lead time | Campo Grande: free strictly above R$ 500, else R$ 35, 1–3 business days. Other cities: no price (needs ZIP/weight), returns PAC/SEDEX/Jadlog with lead times. Drums, keyboards/pianos and basses are flagged as special freight. |
 | `get_store_hours` | Open/closed now, next opening | `America/Campo_Grande`; Mon–Fri 09–18, Sat 09–13; opening minute inclusive, closing minute exclusive; fixed list of national holidays 2025–2026. |
-| `search_policies` | Manual lookup | Keyword scoring over numbered sections of `data/processed/policies.md` (title weighs 3×, prefix matching, a few synonyms); returns 1–3 sections; no embeddings. |
+| `search_policies` | Manual lookup | Keyword scoring over numbered sections of `data/processed/policies.md` (title weighs 3×, prefix matching, a few synonyms); returns 1–3 sections; no embeddings. Adds `notes` that state rules only (official contact; defect exchange and legal warranty run in parallel); whether to open a ticket is decided by the prompt, never by a note. |
 | `create_ticket` | Human hand-off | Appends to `data/runtime/tickets.jsonl` (git-ignored); validates type and contact; promises a reply in 24 business hours (manual 7.3). |
 
 ## Return windows
@@ -54,7 +64,8 @@ which a truncated list led the agent to claim there were no promotions on guitar
 - **`not_sold_accessory`** (`search_products`): the store sells instruments only
   (manual 1 and 7.1). A query containing, after removing accents/case/plural, one
   of *corda, encordoamento, cabo, palheta, pedal, amplificador, "caixa
-  amplificada", case, capa, bag, afinador, estante, baqueta, correia* returns no
+  amplificada", case, capa, bag, afinador, estante, baqueta, correia* (plurals
+  such as "pedais", "amplificadores" and "afinadores" included) returns no
   catalog results, `not_sold_accessory: true` and a message. False positives
   avoided: "cordas" after a number ("7 cordas", "sete cordas"), a term used as an
   instrument feature ("com afinador integrado", "com cordas de aço"), "caixa"
@@ -67,14 +78,18 @@ timestamps) calls `emporio.tools.common.now_in_store_tz()`. The environment
 variable `EMPORIO_NOW` (ISO 8601, `America/Campo_Grande` unless it carries an
 offset) overrides the real clock; empty or unset means real time. The demo value
 used for examples and evals is `EMPORIO_NOW=2026-03-25T10:00`. The model cannot
-set the time: `get_store_hours` takes no arguments.
+set the time: the schemas declare no time argument and `call_tool` drops
+undeclared ones such as `now` or `today` (tested).
 
 ## Assumptions encoded in the tools
 
-These are the interpretations proposed in `docs/data_quality.md` (M1–M8); they
-are isolated in constants so they can be changed in one place.
+These are the interpretations documented in `docs/data_quality.md` (M1–M8) and
+listed in the README (S1–S20); they are isolated in constants so they can be
+changed in one place.
 
-- "Metropolitan region" = **Campo Grande only** (`shipping.METRO_CITIES`).
+- "Metropolitan region" = **Campo Grande only** (`shipping.METRO_CITIES`). The
+  city is compared without accents, case, punctuation or a trailing state, so
+  "Campo Grande/MS" and "campo grande - ms" count as Campo Grande.
 - "Acima de" = **strictly greater** (free shipping at > R$ 500; combined
   payments at > R$ 2.000; the combination test uses the merchandise value after
   promotions, before the PIX discount).

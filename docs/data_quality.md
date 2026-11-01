@@ -18,7 +18,7 @@ as evidence. Reference date for date-dependent checks: **2026-10-31**
 
 Findings are grouped: **P** products, **R** promotions, **O** orders,
 **C** customers, **M** policies manual. Items marked **ASSUMPTION** are
-interpretations that will be listed in the README.
+interpretations; they are listed in the README (section 6, S1–S20).
 
 ---
 
@@ -100,8 +100,8 @@ would be false.
 **Decision:** the **catalog is the source of truth for what is in stock**. For
 empty categories the agent says it has no such items listed right now and offers
 a human ticket (it does not deny that the store may carry them, and does not
-repeat the "300+" figure). `search_products` returns an empty list, which the
-prompt (stage 2) will map to this wording.
+repeat the "300+" figure). `search_products` returns an empty list with a note,
+and the system prompt maps it to this wording.
 
 ### P5. Spec fields
 
@@ -194,7 +194,7 @@ the manual's rule to *new* quotes. No inference about past orders.
 ### O3. Shipped order with an overdue estimate (order 8)
 
 **Evidence:** order 8 `shipped`, `estimated_delivery = 2026-02-28`, **245 days**
-before the reference date. It is the only shipped order.
+before the reference date (2026-10-31). It is the only shipped order.
 
 **Impact:** telling the customer "it is on its way, arriving 2026-02-28" is
 misleading.
@@ -213,8 +213,8 @@ the real clock, "pending" orders are months old.
 
 **Decision:** statuses are reported as recorded with the order date, so the
 customer sees how old the order is. Only the `shipped` overdue rule above is
-computed. **Question for the orchestrator:** should open orders older than N
-days also be flagged?
+computed. Flagging open orders older than N days was considered and rejected:
+the manual sets no processing deadline, so any N would be invented (README S15).
 
 ### O5. Orders containing `coming_soon`, out-of-stock or discontinued products
 
@@ -264,12 +264,19 @@ be asked to confirm them.
 **Decision:** history is reported as stored; `calculate_payment` enforces the
 manual for new quotes. The agent does not volunteer commentary on past orders.
 
+### O9. Other checks (clean)
+
+No orphan customers or products; every order has items; all tracking codes
+match `BR` + 9 alphanumerics + `BR`; tracking and estimate are present exactly
+for `shipped`/`delivered` orders. Order 20's cancellation reason (invalid
+address) cannot be cross-checked, since addresses are not in the data.
+
 ### O10. No receipt date; channel unknown — **ASSUMPTION**
 
 **Evidence:** `orders` has `order_date` and `estimated_delivery` but no real
 receipt date, and no sales channel (online vs. store).
 
-**Decision (orchestrator-approved):** (1) `estimated_delivery` stands in for the
+**Decision:** (1) `estimated_delivery` stands in for the
 receipt date; (2) every system order has shipping and tracking, so it is treated
 as a remote (online) purchase, to which the 7-day right of withdrawal (4.1)
 applies. `get_order_status` computes `return_windows` for **delivered** orders
@@ -280,13 +287,6 @@ exchange = purchase date + 30 days (4.2), legal warranty = receipt + 90 days
 defect exchange expired 2026-03-05, legal warranty valid until 2026-05-18
 (54 days left). Other statuses get no windows. In-store purchases are not in the
 data; the agent explains that case from the policy text (no withdrawal right).
-
-### O9. Other checks (clean)
-
-No orphan customers or products; every order has items; all tracking codes
-match `BR` + 9 alphanumerics + `BR`; tracking and estimate are present exactly
-for `shipped`/`delivered` orders. Order 20's cancellation reason (invalid
-address) cannot be cross-checked, since addresses are not in the data.
 
 ---
 
@@ -325,8 +325,9 @@ in user input is stripped.
 
 **Decision:** use **(67) 3341-4444** (2 of 3 mentions, incl. the company-data
 table) as the store contact and never mention the other number. The tool output
-for policies keeps both source texts intact (no editing); the agent prompt will
-fix the number. **To be confirmed with the store.**
+for policies keeps both source texts intact (no editing) and adds a note with
+the official number, so the agent quotes only (67) 3341-4444. To be confirmed
+with the store.
 
 ### M2. E-mail written with and without accent — **ASSUMPTION**
 
@@ -368,7 +369,8 @@ is applied line by line.
 Free metropolitan shipping is "acima de R$ 500,00" and combined payment methods
 "acima de R$ 2.000,00". Taken literally: **strictly greater** (exactly R$ 500.00
 pays R$ 35.00; exactly R$ 2,000.00 does not allow combinations). Base value =
-merchandise total after promotions/PIX discount, excluding shipping.
+merchandise total after promotions and before the PIX discount, excluding
+shipping.
 
 ### M7. "Região metropolitana de Campo Grande" is undefined — **ASSUMPTION**
 
@@ -392,8 +394,9 @@ mentions that the 90-day legal warranty exists). **Question for the store.**
 - Manual version date is June 2025 while orders run to March 2026; the manual may
   be outdated for newer campaigns (e.g. "Volta às Aulas" has no promotion rows).
 - §4.1 right of withdrawal is stated for **online** purchases; in-store
-  purchases are not covered. The agent answers for online/remote purchases and
-  refers other cases to a human.
+  purchases are not covered. For an in-store purchase the agent explains, from
+  the policy text, the alternatives that still apply (preference exchange within
+  7 days, defect exchange and warranty).
 - Holidays are not listed in the manual; a fixed national-holiday list is used
   (see `docs/tools.md`).
 - Special dates (Black Friday, Natal) "may extend hours" with no dates given; the
