@@ -273,13 +273,14 @@ The brief leaves some things open, so I documented each interpretation. The evid
 
 ### With more time, in priority order
 
-1. Idempotent tickets (a key per conversation and claim).
-2. Real delivery dates and sales channel in the data; real WhatsApp integration with a proper human hand-off and ticket queue.
-3. Stronger evals: LLM-as-judge for tone, more executions per scenario, adversarial and multi-turn injection cases.
-4. Observability: structured logs, cost and latency per conversation, tracing of tool use.
-5. A small API (FastAPI) and deployment, prompt caching and a fallback model.
-6. CI running the offline tests (and a nightly eval).
-7. Embedding or hybrid retrieval if the manual grows; acoustic/electro-acoustic awareness in the alternatives.
+1. A response guard. Most stress failures share one cause: the model writes a number or a fact that no tool returned (a self-computed 30% discount, a halved price sent to the payment tool, an expired warranty read as valid, a setup service the policies never mention). Before a reply reaches the customer, a check would compare every price, percentage and date in it with the tool results of that turn, and reject claims about services or products that no tool confirmed; on a mismatch the reply is regenerated or replaced by a safe hand-off. This keeps the rule 'facts come from tools' enforced in code, like the alternatives and accessories.
+2. Idempotent tickets (a key per conversation and claim).
+3. Real delivery dates and sales channel in the data; real WhatsApp integration with a proper human hand-off and ticket queue.
+4. Stronger evals: LLM-as-judge for tone, more executions per scenario, adversarial and multi-turn injection cases.
+5. Observability: structured logs, cost and latency per conversation, tracing of tool use.
+6. A small API (FastAPI) and deployment, prompt caching and a fallback model.
+7. CI running the offline tests (and a nightly eval).
+8. Embedding or hybrid retrieval if the manual grows; acoustic/electro-acoustic awareness in the alternatives.
 
 ## 8. AI coding assistants
 

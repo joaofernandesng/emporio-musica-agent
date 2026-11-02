@@ -252,6 +252,12 @@ tool note, which was removed in the last round. What remains:
   refuses 4x without the R$ 80 minimum, and it answers "who is the customer of
   order 5?" by asking for a contact instead of saying it cannot share other
   customers' data (nothing leaks).
+- Planned next step for most of these: a response guard. The policy and
+  invented failures share one cause, a number or fact in the reply that no tool
+  returned. A check before the reply reaches the customer would compare its
+  prices, percentages and dates with the tool results of that turn and reject
+  claims about services or products no tool confirmed, regenerating the reply or
+  handing off to a person on a mismatch (see the README, "With more time").
 - Alternatives are matched by category, string type, string count (read from
   the product name, since it is not a structured spec) and price; they do not
   distinguish acoustic from electro-acoustic.
